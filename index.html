@@ -2,63 +2,67 @@
 <html lang="de">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-  <title>Kolonie-KI – PWA</title>
-
-  <!-- iOS PWA -->
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="theme-color" content="#0b0d12" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Kolonie-KI – Demo</title>
 
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="stylesheet" href="/styles.css" />
+  <meta name="theme-color" content="#0b0d12" />
 </head>
 <body>
   <canvas id="view"></canvas>
 
-  <!-- HUD -->
   <div id="hud" class="hud">
     <div class="left">
-      <div class="chip a"><span class="dot a"></span>A Leben <b id="aAlive">0</b> • Score <b id="aScore">0</b></div>
-      <div class="chip b"><span class="dot b"></span>B Leben <b id="bAlive">0</b> • Score <b id="bScore">0</b></div>
+      <div class="chip a"><span class="dot a"></span>A: <b id="aAlive">0</b> • Score <b id="aScore">0</b></div>
+      <div class="chip b"><span class="dot b"></span>B: <b id="bAlive">0</b> • Score <b id="bScore">0</b></div>
       <div class="chip sys"><span class="dot g"></span>Takt <b id="tick">0</b> • FPS <b id="fps">0</b></div>
     </div>
     <div class="right">
-      <button id="btnPause" class="ghost">⏸︎ Pause</button>
-      <button id="btnResume" class="ok">▶︎ Weiter</button>
+      <button id="btnPause" class="ghost">⏸ Pause</button>
+      <button id="btnResume" class="ok">▶ Weiter</button>
       <button id="btnStop" class="danger">■ Stop</button>
     </div>
   </div>
 
-  <!-- Control Panel -->
   <div id="panel" class="panel">
-    <h1>Kolonie-KI – 2D RL Simulation</h1>
-    <p class="muted">Zwei Kolonien <b>Räuber</b> (aggressiv) und <b>Sammler</b> (kooperativ) lernen via <b>Q-Learning</b>, um Ressourcen zu dominieren. Alles läuft offline, mobil-optimiert, mit Vollbild.</p>
+    <h1>Kolonie-KI – Verkaufsdemo</h1>
+    <p class="muted">Zwei Kolonien <b>Räuber (A)</b> und <b>Sammler (B)</b> kämpfen und entwickeln sich.</p>
 
-    <h2>KI-Parameter</h2>
+    <h2>Parameter Kolonie A</h2>
     <div class="grid">
-      <label>Lernrate α <span id="alphaVal"></span></label>
-      <input id="alpha" type="range" min="0.01" max="0.9" step="0.01" value="0.20" />
-      <label>Exploration ε <span id="epsVal"></span></label>
-      <input id="eps" type="range" min="0" max="1" step="0.01" value="0.10" />
-      <label>Sichtweite (Zellen) <span id="visionVal"></span></label>
-      <input id="vision" type="range" min="1" max="8" step="1" value="4" />
+      <label>α A <span id="alphaAVal"></span></label>
+      <input id="alphaA" type="range" min="0.01" max="0.9" step="0.01" value="0.20" />
+      <label>ε A <span id="epsAVal"></span></label>
+      <input id="epsA" type="range" min="0" max="1" step="0.01" value="0.10" />
+      <label>Sichtweite A <span id="visionAVal"></span></label>
+      <input id="visionA" type="range" min="1" max="8" step="1" value="4" />
     </div>
 
-    <h2>Feld & Start</h2>
+    <h2>Parameter Kolonie B</h2>
+    <div class="grid">
+      <label>α B <span id="alphaBVal"></span></label>
+      <input id="alphaB" type="range" min="0.01" max="0.9" step="0.01" value="0.20" />
+      <label>ε B <span id="epsBVal"></span></label>
+      <input id="epsB" type="range" min="0" max="1" step="0.01" value="0.10" />
+      <label>Sichtweite B <span id="visionBVal"></span></label>
+      <input id="visionB" type="range" min="1" max="8" step="1" value="4" />
+    </div>
+
+    <h2>Feld</h2>
     <div class="grid">
       <label>Einheiten pro Kolonie</label>
-      <input id="agents" type="number" min="5" max="100" step="1" value="22" />
-      <label>Ressourcendichte (%) <span id="resStartVal"></span></label>
+      <input id="agents" type="number" min="5" max="100" step="1" value="25" />
+      <label>Ressourcen (%) <span id="resStartVal"></span></label>
       <input id="resStart" type="range" min="0" max="25" step="1" value="6" />
-      <label>Hindernisdichte (%) <span id="obsStartVal"></span></label>
-      <input id="obsStart" type="range" min="0" max="30" step="1" value="6" />
+      <label>Hindernisse (%) <span id="obsStartVal"></span></label>
+      <input id="obsStart" type="range" min="0" max="30" step="1" value="5" />
     </div>
 
     <div class="grid">
-      <label>Torus-Welt (Wrap)</label>
+      <label>Torus-Welt</label>
       <input id="wrap" type="checkbox" checked />
-      <label>Iterationsgeschwindigkeit (Ticks/s) <span id="speedVal"></span></label>
+      <label>Ticks/s <span id="speedVal"></span></label>
       <input id="speed" type="range" min="1" max="300" step="1" value="90" />
     </div>
 
@@ -67,25 +71,16 @@
       <input id="resLive" type="range" min="0" max="25" step="1" value="6" />
       <label>Darstellung</label>
       <select id="theme">
-        <option value="dark" selected>Dunkel (empfohlen)</option>
+        <option value="dark" selected>Dunkel</option>
         <option value="neon">Neon</option>
         <option value="mono">Monochrom</option>
       </select>
     </div>
 
     <div class="actions">
-      <button id="btnStart" class="primary">🚀 Start (Vollbild)</button>
+      <button id="btnStart" class="primary">🚀 Start</button>
       <button id="btnQuick" class="ghost">Schnellstart</button>
     </div>
-
-    <details class="muted">
-      <summary>Technik</summary>
-      <ul>
-        <li>Q-Learning (kolonie-geteilte Q-Tables)</li>
-        <li>Tile-Raster, Batch-Render, iOS-friendly Canvas</li>
-        <li>Service Worker (offline), Manifest, Vollbild</li>
-      </ul>
-    </details>
   </div>
 
   <script type="module" src="/app.js"></script>
