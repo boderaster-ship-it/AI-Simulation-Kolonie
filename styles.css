@@ -5,30 +5,17 @@
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--hi);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;overflow:hidden}
-
 #view{position:fixed;inset:0;display:block;touch-action:none}
-
-.hud{position:fixed;inset:auto 8px 8px 8px;display:flex;justify-content:space-between;align-items:center;gap:8px;pointer-events:none}
-.hud .left, .hud .right{display:flex;gap:8px;flex-wrap:wrap;pointer-events:auto}
-.chip{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:#0f1117;border:1px solid var(--line);font-size:.86rem}
+.hud{position:fixed;left:8px;right:8px;top:auto;bottom:8px;display:flex;justify-content:space-between;pointer-events:none}
+.hud .chip{pointer-events:auto;display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#0f1117;border:1px solid var(--line);font-size:.85rem}
 .dot{width:8px;height:8px;border-radius:50%}
-.dot.a{background:var(--a)} .dot.b{background:var(--b)} .dot.g{background:var(--ok)}
-
-button{appearance:none;border:0;border-radius:12px;padding:10px 12px;font-weight:650;letter-spacing:.2px;cursor:pointer}
+.dot.a{background:var(--a)}.dot.b{background:var(--b)}.dot.g{background:var(--ok)}
+button{border:0;border-radius:12px;padding:10px 12px;font-weight:650;cursor:pointer}
 .primary{background:linear-gradient(180deg,#4a9bff,#2a7be9);color:white}
 .ghost{background:var(--ghost);color:var(--hi);border:1px solid var(--line)}
 .ok{background:linear-gradient(180deg,#7edb9a,#51c179);color:#001a0a}
 .danger{background:linear-gradient(180deg,#ff7b7b,#ea4d4d);color:white}
-
 .panel{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(900px,96vw);max-height:96vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 10px 40px rgba(0,0,0,.45)}
-h1{margin:.2rem 0 .6rem;font-size:1.35rem}
-h2{margin:.8rem 0 .4rem;font-size:1.05rem}
-.muted{color:var(--muted);font-size:.95rem}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:center}
 .actions{display:flex;gap:10px;margin-top:10px}
-
-select,input[type=number]{width:100%;padding:10px;border-radius:12px;border:1px solid var(--line);background:#0f1117;color:var(--hi)}
-input[type=range]{width:100%}
-details{margin-top:10px}
-
-.theme-neon body{background:#02030a}
+.muted{color:var(--muted);font-size:.9rem}
