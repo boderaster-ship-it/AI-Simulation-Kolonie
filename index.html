@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <title>Kolonie-KI – PWA</title>
+
+  <!-- iOS PWA -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#0b0d12" />
+
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <canvas id="view"></canvas>
+
+  <!-- HUD -->
+  <div id="hud" class="hud">
+    <div class="left">
+      <div class="chip a"><span class="dot a"></span>A Leben <b id="aAlive">0</b> • Score <b id="aScore">0</b></div>
+      <div class="chip b"><span class="dot b"></span>B Leben <b id="bAlive">0</b> • Score <b id="bScore">0</b></div>
+      <div class="chip sys"><span class="dot g"></span>Takt <b id="tick">0</b> • FPS <b id="fps">0</b></div>
+    </div>
+    <div class="right">
+      <button id="btnPause" class="ghost">⏸︎ Pause</button>
+      <button id="btnResume" class="ok">▶︎ Weiter</button>
+      <button id="btnStop" class="danger">■ Stop</button>
+    </div>
+  </div>
+
+  <!-- Control Panel -->
+  <div id="panel" class="panel">
+    <h1>Kolonie-KI – 2D RL Simulation</h1>
+    <p class="muted">Zwei Kolonien <b>Räuber</b> (aggressiv) und <b>Sammler</b> (kooperativ) lernen via <b>Q-Learning</b>, um Ressourcen zu dominieren. Alles läuft offline, mobil-optimiert, mit Vollbild.</p>
+
+    <h2>KI-Parameter</h2>
+    <div class="grid">
+      <label>Lernrate α <span id="alphaVal"></span></label>
+      <input id="alpha" type="range" min="0.01" max="0.9" step="0.01" value="0.20" />
+      <label>Exploration ε <span id="epsVal"></span></label>
+      <input id="eps" type="range" min="0" max="1" step="0.01" value="0.10" />
+      <label>Sichtweite (Zellen) <span id="visionVal"></span></label>
+      <input id="vision" type="range" min="1" max="8" step="1" value="4" />
+    </div>
+
+    <h2>Feld & Start</h2>
+    <div class="grid">
+      <label>Einheiten pro Kolonie</label>
+      <input id="agents" type="number" min="5" max="100" step="1" value="22" />
+      <label>Ressourcendichte (%) <span id="resStartVal"></span></label>
+      <input id="resStart" type="range" min="0" max="25" step="1" value="6" />
+      <label>Hindernisdichte (%) <span id="obsStartVal"></span></label>
+      <input id="obsStart" type="range" min="0" max="30" step="1" value="6" />
+    </div>
+
+    <div class="grid">
+      <label>Torus-Welt (Wrap)</label>
+      <input id="wrap" type="checkbox" checked />
+      <label>Iterationsgeschwindigkeit (Ticks/s) <span id="speedVal"></span></label>
+      <input id="speed" type="range" min="1" max="300" step="1" value="90" />
+    </div>
+
+    <div class="grid">
+      <label>Live-Ressourcen (%) <span id="resLiveVal"></span></label>
+      <input id="resLive" type="range" min="0" max="25" step="1" value="6" />
+      <label>Darstellung</label>
+      <select id="theme">
+        <option value="dark" selected>Dunkel (empfohlen)</option>
+        <option value="neon">Neon</option>
+        <option value="mono">Monochrom</option>
+      </select>
+    </div>
+
+    <div class="actions">
+      <button id="btnStart" class="primary">🚀 Start (Vollbild)</button>
+      <button id="btnQuick" class="ghost">Schnellstart</button>
+    </div>
+
+    <details class="muted">
+      <summary>Technik</summary>
+      <ul>
+        <li>Q-Learning (kolonie-geteilte Q-Tables)</li>
+        <li>Tile-Raster, Batch-Render, iOS-friendly Canvas</li>
+        <li>Service Worker (offline), Manifest, Vollbild</li>
+      </ul>
+    </details>
+  </div>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
