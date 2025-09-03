@@ -199,6 +199,10 @@
   const ptx = paint.getContext('2d');
   const dpr = Math.max(1, window.devicePixelRatio || 1);
 
+  // --- Offscreen-Layer nur für den Glow (scharfer Kern, Glow außen) ---
+  const glowLayer = document.createElement('canvas');
+  const gtx = glowLayer.getContext('2d', { alpha:true });
+
   let W=0,H=0,CX=0,CY=0, pxPerMM=3.78*dpr;
 
   const startScreen = document.getElementById('startScreen');
@@ -355,6 +359,7 @@
     const w = Math.floor(rect.width*dpr), h = Math.floor(rect.height*dpr);
     if (w===W && h===H) return;
     W=w; H=h; main.width=W; main.height=H; paint.width=W; paint.height=H; CX=W/2; CY=H/2;
+    glowLayer.width=W; glowLayer.height=H; // Offscreen an Größe anpassen
     calibrateMM();
   }
   window.addEventListener('resize', resize, {passive:true});
@@ -405,8 +410,8 @@
 
     } else {
       // ===== LINIEN: horizontale Balken mit Öffnung (mm), Ball fällt von oben nach unten =====
-      const topGapPx = 24*dpr;        // Abstand zur Oberkante
-      const bottomGapPx = 24*dpr;     // Abstand zur Unterkante
+      const topGapPx = 24*dpr;
+      const bottomGapPx = 24*dpr;
       const avail = H - topGapPx - bottomGapPx;
       const gapRatio = 0.33;
       const spanFactor = (NUM_RINGS + (NUM_RINGS-1)*gapRatio);
@@ -414,7 +419,6 @@
       let thickness = Math.max(10*dpr, avail / (spanFactor+0.0001));
       let gap = thickness * gapRatio;
 
-      // Falls es zu hoch wird, skaliere thickness/gap gleichmäßig
       const totalNeeded = NUM_RINGS*thickness + (NUM_RINGS-1)*gap;
       if (totalNeeded > avail){
         const scale = avail / totalNeeded;
@@ -425,11 +429,8 @@
       for (let i=0;i<NUM_RINGS;i++){
         const yCenter = topGapPx + thickness/2 + i*(thickness+gap);
         const rotSpeed = BASE_ROT_SPEED * (0.6 + Math.random()*0.8) * (Math.random()<0.5?-1:1);
-        // Öffnung initial irgendwo in der Breite
         const openX = Math.random()*W;
-        lines.push({
-          y: yCenter, halfT: thickness/2, openX, openW: openPx, rotSpeed, removed:false
-        });
+        lines.push({ y: yCenter, halfT: thickness/2, openX, openW: openPx, rotSpeed, removed:false });
       }
       ballRadius = Math.max(5*dpr, thickness * 0.35);
       resetRunState(shape);
@@ -449,7 +450,7 @@
     let spawnX = CX, spawnY = CY + 20*dpr;
     if ((shapeMode||ui.shape.value)==='lines'){ // Spawn oben
       spawnX = CX;
-      spawnY = Math.max(18*dpr, 10); // knapp unter oberem Rand
+      spawnY = Math.max(18*dpr, 10);
     }
     const b = makeBall(spawnX, spawnY, 0, 0);
     b.trail.push({x:b.x,y:b.y});
@@ -575,7 +576,6 @@
 
   function processRingForBall_Lines(b){
     if (finished) return;
-    // aktive Ebene anhand ringIndex
     let idx = b.ringIndex;
     while (idx < lines.length && lines[idx].removed) idx++;
     b.ringIndex = idx;
@@ -585,29 +585,22 @@
     const yTop = L.y - L.halfT;
     const yBot = L.y + L.halfT;
 
-    // Öffnung: [openX - openW/2, openX + openW/2]
     const left = L.openX - L.openW/2;
     const right= L.openX + L.openW/2;
 
-    // Prüfe Überquerungen der oberen/unteren Kante
     const prevAboveTop = (b.py <= yTop - b.r), nowBelowTop = (b.y  >= yTop + b.r);
     const prevAboveMid = (b.py <= L.y), nowBelowMid = (b.y >= L.y);
-    const prevAboveBot = (b.py <= yBot - b.r), nowBelowBot = (b.y  >= yBot + b.r);
 
-    // Wenn durch den Balkenbereich läuft und NICHT durch Öffnung -> reflektieren an der Kante
-    // Wir checken zuerst obere Kante
     if (prevAboveTop && nowBelowTop){
       if (!(b.x >= left && b.x <= right)){
-        b.y = yTop - b.r - 0.01; // zurücksetzen
-        b.vy = -Math.abs(b.vy);  // reflektieren
+        b.y = yTop - b.r - 0.01;
+        b.vy = -Math.abs(b.vy);
         playBounce();
         return;
       }
     }
-    // Mittellinie (zählt als "durchbrochen", wenn durch Öffnung)
     if (prevAboveMid && nowBelowMid){
       if ((b.x >= left && b.x <= right)){
-        // Ebene erfolgreich passiert
         L.removed = true;
         b.ringIndex++;
         ringsLeft = lines.filter(r=>!r.removed).length;
@@ -624,10 +617,6 @@
         }
       }
     }
-    // Untere Kante – falls hineinläuft ohne Öffnung (von unten zurückprallen)
-    if (!prevAboveBot && (b.py >= yBot + b.r) && (b.y <= yBot - b.r)){
-      // seltene Richtung (aufwärts), hier überspringen – Gravitation zieht ohnehin nach unten
-    }
   }
 
   // ===== Loop =====
@@ -637,7 +626,6 @@
     const dtFull=Math.min(0.033, t-lastT || 0.016);
     lastT=t;
 
-    // Öffnungen bewegen
     if (ui.shape.value==='circle'){
       for (const ring of rings){
         if (ring.removed) continue;
@@ -647,17 +635,13 @@
     } else {
       for (const L of lines){
         if (L.removed) continue;
-        // Öffnung horizontal sinusförmig bewegen (wie "Rotation")
-        // Amplitudenbegrenzung: mind. Randabstand 20px
         const margin = Math.max(20*dpr, L.openW*0.6);
         const amp = (W/2 - margin);
-        // openX oszilliert um CX
         const phase = (performance.now()*0.001) * L.rotSpeed;
         L.openX = CX + Math.sin(phase)*amp;
       }
     }
 
-    // Physics
     if (launched){
       let maxSpeed=0;
       for (const b of balls) maxSpeed=Math.max(maxSpeed, Math.hypot(b.vx,b.vy));
@@ -669,8 +653,8 @@
         for (const b of balls){
           b.px=b.x; b.py=b.y;
 
-          b.vy += G*dt;      // gravity
-          b.x  += b.vx*dt;   // move
+          b.vy += G*dt;
+          b.x  += b.vx*dt;
           b.y  += b.vy*dt;
 
           if (ui.shape.value==='circle'){
@@ -680,105 +664,104 @@
             processRingForBall_Lines(b);
           }
 
-          // Wände
           const margin = b.r + 4*dpr;
           if (b.x < margin){ b.x = margin; b.vx = Math.abs(b.vx); playBounce(); }
           if (b.x > W - margin){ b.x = W - margin; b.vx = -Math.abs(b.vx); playBounce(); }
           if (b.y < margin){ b.y = margin; b.vy = Math.abs(b.vy); playBounce(); }
           if (b.y > H - margin){ b.y = H - margin; b.vy = -Math.abs(b.vy); playBounce(); }
 
-          // Trails (normal)
           b.trail.push({x:b.x,y:b.y});
           if (!ui.drawMode.checked && b.trail.length>TRAIL_MAX) b.trail.shift();
 
-          // Zeichenmodus – Farben/Palette + weiche, dunklere Ränder
-         if (ui.drawMode.checked){
-  // === Farbe wählen (wie bisher) ===
-  let hue, sat=80, light=60;
-  const mode = ui.drawColorMode.value;
-  if (mode==='rainbow'){ b.hue=(b.hue+30*dt)%360; hue=b.hue; }
-  else if (mode==='red'){ hue=0; }
-  else if (mode==='blue'){ hue=210; }
-  else if (mode==='green'){ hue=130; }
-  else if (mode==='magenta'){ hue=300; }
-  else if (mode==='cyan'){ hue=185; }
-  else if (mode==='yellow'){ hue=55; }
-  else if (mode==='white'){ hue=0; sat=0; light=96; }
-  else if (mode==='neon'){
-    const palette=[50,140,200,290,330];
-    b.neonPhase=(b.neonPhase+dt*0.4)%1;
-    hue=palette[Math.floor(b.neonPhase*palette.length)]; sat=95; light=62;
-  } else { hue=200; }
+          // ======= ZEICHENMODUS – Scharfer Kern + externer Glow + graue Kante =======
+          if (ui.drawMode.checked){
+            // Farbwahl
+            let hue, sat=88, light=60;
+            const mode = ui.drawColorMode.value;
+            if (mode==='rainbow'){ b.hue=(b.hue+30*dt)%360; hue=b.hue; }
+            else if (mode==='red'){ hue=0; }
+            else if (mode==='blue'){ hue=210; }
+            else if (mode==='green'){ hue=130; }
+            else if (mode==='magenta'){ hue=300; }
+            else if (mode==='cyan'){ hue=185; }
+            else if (mode==='yellow'){ hue=55; }
+            else if (mode==='white'){ hue=0; sat=0; light=96; }
+            else if (mode==='neon'){
+              const palette=[50,140,200,290,330];
+              b.neonPhase=(b.neonPhase+dt*0.4)%1;
+              hue=palette[Math.floor(b.neonPhase*palette.length)]; sat=96; light=62;
+            } else { hue=200; }
 
-  const core = `hsl(${hue} ${sat}% ${light}%)`;
-  const edge = `hsl(${hue} ${Math.max(0,sat-10)}% ${Math.max(0,light-18)}%)`;
+            const coreColor = `hsl(${hue} ${sat}% ${light}%)`;
+            const glowColor = `hsl(${(hue+8)%360} ${Math.min(100,sat+2)}% ${Math.max(35, light-15)}%)`;
+            const edgeColor = 'rgba(110,112,120,0.95)';
 
-  // === Breiten & Blur dynamisch (iPhone-freundlich) ===
-  const base = Math.max(1.0, b.r);
-  const coreW   = Math.max(1.1, base*0.95);
-  const edgeW   = Math.max(1.0, base*0.65);
-  const shadowW = Math.max(1.6, base*1.55);
-  const shadowBlur = Math.min(12, Math.max(2, base*1.2));
-  const gutterW = Math.max(0.8, coreW + edgeW*0.9);   // „Graben“ zum Freistellen
-  const hiliteW = Math.max(0.8, base*0.45);
+            // Breiten / Blur
+            const base = Math.max(1.0, b.r);
+            const coreW   = Math.max(1.3, base*0.95);
+            const edgeW   = Math.max(1.0, base*0.65);
+            const glowW   = Math.max(coreW*1.9, coreW+2);
+            const glowBlur= Math.min(18, Math.max(3, coreW*1.6));
 
-  // ========== 0) GUTTER / GRABEN (macht Platz für den neuen Strich) ==========
-  // Schneidet einen schmalen dunklen Kanal in die Paint-Ebene, damit die Striche
-  // sich optisch trennen – das erzeugt die klaren Zwischenräume für den 3D-Look.
-  ptx.save();
-  ptx.globalCompositeOperation = 'destination-out';
-  ptx.lineCap='round'; ptx.lineJoin='round';
-  ptx.lineWidth = gutterW;
-  ptx.beginPath();
-  ptx.moveTo(b.px, b.py);
-  ptx.lineTo(b.x, b.y);
-  ptx.stroke();
-  ptx.restore();
+            // sehr schmale Trennfuge (optional, verhindert Matsch)
+            ptx.save();
+            ptx.globalCompositeOperation='destination-out';
+            ptx.lineCap='round'; ptx.lineJoin='round';
+            ptx.lineWidth=Math.max(0.6, coreW*0.18);
+            ptx.beginPath(); ptx.moveTo(b.px,b.py); ptx.lineTo(b.x,b.y); ptx.stroke();
+            ptx.restore();
 
-  // ========== 1) Outer Shadow (unscharfer, dunkler Rand) ==========
-  ptx.save();
-  ptx.globalCompositeOperation = 'source-over';
-  ptx.globalAlpha = 0.70;
-  ptx.lineCap='round'; ptx.lineJoin='round';
-  ptx.strokeStyle = edge;
-  ptx.lineWidth = shadowW;
-  ptx.shadowColor = edge;
-  ptx.shadowBlur = shadowBlur;
-  ptx.beginPath(); ptx.moveTo(b.px, b.py); ptx.lineTo(b.x, b.y); ptx.stroke();
-  ptx.restore();
+            // 1) Glow Offscreen malen + Kern ausstanzen
+            gtx.clearRect(0,0,W,H);
+            gtx.save();
+            gtx.globalCompositeOperation='source-over';
+            gtx.lineCap='round'; gtx.lineJoin='round';
+            gtx.strokeStyle=glowColor;
+            gtx.lineWidth=glowW;
+            gtx.shadowColor=glowColor;
+            gtx.shadowBlur=glowBlur;
+            gtx.beginPath(); gtx.moveTo(b.px,b.py); gtx.lineTo(b.x,b.y); gtx.stroke();
+            gtx.globalCompositeOperation='destination-out';
+            gtx.shadowBlur=0; gtx.lineWidth=coreW; // Kern schneidet den Glow aus
+            gtx.beginPath(); gtx.moveTo(b.px,b.py); gtx.lineTo(b.x,b.y); gtx.stroke();
+            gtx.restore();
 
-  // ========== 2) Graue Kante (klare Kontur) ==========
-  ptx.save();
-  ptx.globalAlpha = 0.95;
-  ptx.lineCap='round'; ptx.lineJoin='round';
-  ptx.strokeStyle = 'rgba(110,112,120,0.95)'; // leicht kühles Grau
-  ptx.lineWidth = edgeW;
-  ptx.beginPath(); ptx.moveTo(b.px, b.py); ptx.lineTo(b.x, b.y); ptx.stroke();
-  ptx.restore();
+            ptx.save();
+            ptx.globalCompositeOperation='lighter';
+            ptx.globalAlpha=0.85;
+            ptx.drawImage(glowLayer,0,0);
+            ptx.restore();
 
-  // ========== 3) Heller Kern ==========
-  ptx.save();
-  ptx.globalAlpha = 0.98;
-  ptx.lineCap='round'; ptx.lineJoin='round';
-  ptx.strokeStyle = core;
-  ptx.lineWidth = coreW;
-  ptx.beginPath(); ptx.moveTo(b.px, b.py); ptx.lineTo(b.x, b.y); ptx.stroke();
-  ptx.restore();
+            // 2) Graue Kante (scharf)
+            ptx.save();
+            ptx.globalAlpha=0.95;
+            ptx.lineCap='round'; ptx.lineJoin='round';
+            ptx.strokeStyle=edgeColor;
+            ptx.lineWidth=edgeW;
+            ptx.beginPath(); ptx.moveTo(b.px,b.py); ptx.lineTo(b.x,b.y); ptx.stroke();
+            ptx.restore();
 
-  // ========== 4) Highlight / Lichtkante (3D) ==========
-  // Sehr dünner, heller Strich oben drauf (Screen-Blending), gibt Tiefe/Glanz.
-  ptx.save();
-  ptx.globalCompositeOperation = 'lighter'; // ähnlich „Screen“
-  ptx.globalAlpha = 0.35;
-  ptx.lineCap='round'; ptx.lineJoin='round';
-  // leicht wärmere/neutralere Highlights je nach Modus
-  const hi = (mode==='white') ? 'rgba(255,255,255,0.9)'
-                              : 'rgba(255,255,245,0.9)';
-  ptx.strokeStyle = hi;
-  ptx.lineWidth = hiliteW;
-  ptx.beginPath(); ptx.moveTo(b.px, b.py); ptx.lineTo(b.x, b.y); ptx.stroke();
-  ptx.restore();
-}
+            // 3) Kern (scharf, kräftig)
+            ptx.save();
+            ptx.globalAlpha=1.0;
+            ptx.lineCap='round'; ptx.lineJoin='round';
+            ptx.strokeStyle=coreColor;
+            ptx.lineWidth=coreW;
+            ptx.beginPath(); ptx.moveTo(b.px,b.py); ptx.lineTo(b.x,b.y); ptx.stroke();
+            ptx.restore();
+
+            // 4) Highlight (leichter Glanz – 3D)
+            ptx.save();
+            ptx.globalCompositeOperation='lighter';
+            ptx.globalAlpha=0.35;
+            ptx.lineCap='round'; ptx.lineJoin='round';
+            const hi = (mode==='white') ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,240,0.9)';
+            ptx.strokeStyle=hi;
+            ptx.lineWidth=Math.max(0.8, base*0.45);
+            ptx.beginPath(); ptx.moveTo(b.px,b.py); ptx.lineTo(b.x,b.y); ptx.stroke();
+            ptx.restore();
+          }
+          // ======= /ZEICHENMODUS =======
         }
       }
     }
@@ -808,7 +791,6 @@
     ctx.fill();
 
     if (ui.shape.value==='circle'){
-      // Ringe
       for (let i=0;i<rings.length;i++){
         const ring=rings[i]; if (ring.removed) continue;
         const hue = 200 + i*9;
@@ -835,7 +817,6 @@
         ctx.restore();
       }
     } else {
-      // Linien (horizontale Balken mit Öffnung)
       for (let i=0;i<lines.length;i++){
         const L=lines[i]; if (L.removed) continue;
         const hue = 200 + i*9;
@@ -846,18 +827,14 @@
         const left = L.openX - L.openW/2, right = L.openX + L.openW/2;
 
         ctx.save();
-        // Hauptbalken links
         ctx.strokeStyle=colorMain; ctx.lineWidth = yBot - yTop;
         ctx.beginPath(); ctx.moveTo(0, L.y); ctx.lineTo(Math.max(0,left), L.y); ctx.stroke();
-        // Hauptbalken rechts
         ctx.beginPath(); ctx.moveTo(Math.min(W,right), L.y); ctx.lineTo(W, L.y); ctx.stroke();
 
-        // Glanzlinie
         ctx.strokeStyle=colorShine; ctx.lineWidth = Math.max(1, (yBot-yTop)*0.25);
         const glossY = L.y - (yBot-yTop)*0.25;
         ctx.beginPath(); ctx.moveTo(0, glossY); ctx.lineTo(Math.max(0,left), glossY); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(Math.min(W,right), glossY); ctx.lineTo(W, glossY); ctx.stroke();
-
         ctx.restore();
       }
     }
