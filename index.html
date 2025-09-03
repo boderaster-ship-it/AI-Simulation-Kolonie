@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-<title>Ringe – Final (Vollbild, Optionen davor)</title>
+<title>Ringe & Linien – Vollbild</title>
 <style>
   :root{
     --bg:#0b0f15; --bg2:#06080d; --fg:#e9eef6; --accent:#a9b8ff;
@@ -12,12 +12,10 @@
   html, body { height:100%; margin:0; background:var(--bg); color:var(--fg); font-family:system-ui, -apple-system, Segoe UI, Roboto, sans-serif;}
   #wrap { position:relative; width:100%; height:100%; overflow:hidden; }
 
-  /* Zwei Layer: main unten (Hintergrund, Ringe, Ball), paint oben (permanente Trails) */
   canvas { position:absolute; inset:0; width:100%; height:100%; touch-action:none; }
-  #c { z-index: 1; }           /* Spiel */
-  #paintCanvas { z-index: 2; pointer-events:none; } /* Zeichnen oben drüber */
+  #c { z-index: 1; }
+  #paintCanvas { z-index: 2; pointer-events:none; }
 
-  /* HUD */
   .hud {
     position:absolute; left:12px; top:12px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;
     background:var(--glass); border:1px solid var(--line); border-radius:10px; padding:8px 10px; backdrop-filter: blur(8px);
@@ -36,14 +34,13 @@
   }
   .kbd{ font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background:#131a27; padding:2px 6px; border-radius:6px; border:1px solid rgba(255,255,255,.12); font-size:12px }
 
-  /* Start-/Options-Screen */
   #startScreen{
     position:fixed; inset:0; background:linear-gradient(160deg, #0b0f15 0%, #06080d 100%);
     display:flex; align-items:center; justify-content:center; padding:16px;
     z-index:10;
   }
   .panel{
-    width:min(520px, 96vw); max-height:92vh; overflow:auto;
+    width:min(560px, 96vw); max-height:92vh; overflow:auto;
     background:var(--glass); border:1px solid var(--line); border-radius:16px; padding:16px 18px; backdrop-filter: blur(10px);
     box-shadow: 0 20px 40px rgba(0,0,0,.45);
   }
@@ -66,16 +63,13 @@
 </style>
 </head>
 <body>
-<!-- präzise mm-Kalibrierung -->
+<!-- mm-Kalibrierung (für Linien-Öffnung) -->
 <div id="mmCal" style="position:absolute; visibility:hidden; width:10mm; height:1px;"></div>
 
 <div id="wrap">
-  <!-- Paint-Layer (dauerhafte Zeichnung, liegt OBEN) -->
   <canvas id="paintCanvas"></canvas>
-  <!-- Main-Layer (Hintergrund, Ringe, Ball) -->
   <canvas id="c"></canvas>
 
-  <!-- HUD -->
   <div class="hud hidden" id="hud">
     <span class="stat">Layers: <b id="layersLeft">10</b></span>
     <span class="stat">Bounces: <b id="bounces">0</b></span>
@@ -86,7 +80,6 @@
   <div id="msg" class="msg">Alle Layers entfernt! Tippe/Klick in die Mitte und schieße erneut.</div>
 </div>
 
-<!-- Start-/Optionen-Bildschirm -->
 <div id="startScreen">
   <div class="panel">
     <h1>⚙️ Optionen</h1>
@@ -95,20 +88,18 @@
         <label for="shape">Form</label>
         <select id="shape">
           <option value="circle">Kreis</option>
-          <option value="triangle">Dreieck</option>
-          <option value="square">Quadrat</option>
+          <option value="lines">Linien (von oben nach unten)</option>
         </select>
       </div>
 
       <div class="row">
-        <label for="numRings">Anzahl Ringe: <span id="numRingsVal" class="kbd">10</span></label>
+        <label for="numRings">Anzahl Schichten: <span id="numRingsVal" class="kbd">10</span></label>
         <input id="numRings" type="range" min="3" max="30" value="10"/>
       </div>
 
       <div class="row">
         <label id="openWidthLbl" for="openWidth">Öffnung (°): <span id="openWidthVal" class="kbd">40°</span></label>
-        <!-- Kreis: Grad, Dreieck/Quadrat: Millimeter (am Bildschirm gemessen, mm-genau kalibriert) -->
-        <input id="openWidth" type="range" min="15" max="120" value="40"/>
+        <input id="openWidth" type="range" min="10" max="160" value="40"/>
       </div>
 
       <div class="row">
@@ -130,13 +121,28 @@
         <label><input id="multi" type="checkbox"/> Multiball</label>
       </div>
 
+      <!-- ZEICHENMODUS – Farben/Palette -->
       <div class="row">
-        <label><input id="drawMode" type="checkbox"/> Zeichenmodus (permanenter Regenbogen-Schweif)</label>
+        <label><input id="drawMode" type="checkbox"/> Zeichenmodus (permanenter Schweif)</label>
+      </div>
+      <div class="row">
+        <label for="drawColorMode">Schweif-Farbe</label>
+        <select id="drawColorMode">
+          <option value="rainbow">🌈 Regenbogen</option>
+          <option value="red">🔴 Rot</option>
+          <option value="blue">🔵 Blau</option>
+          <option value="green">🟢 Grün</option>
+          <option value="magenta">🟣 Magenta</option>
+          <option value="cyan">🔷 Cyan</option>
+          <option value="yellow">🟡 Gelb</option>
+          <option value="white">⚪ Weiß</option>
+          <option value="neon">✨ Neon-Palette (cycle)</option>
+        </select>
       </div>
 
-      <!-- NEU: Audio-Optionen -->
+      <!-- AUDIO -->
       <div class="row">
-        <label for="pitchShift">Tonleiter – Pitch (±5 Halbtöne): <span id="pitchShiftVal" class="kbd">0</span></label>
+        <label for="pitchShift">Tonleiter – Pitch (±5 HT): <span id="pitchShiftVal" class="kbd">0</span></label>
         <input id="pitchShift" type="range" min="-5" max="5" step="1" value="0"/>
       </div>
 
@@ -157,26 +163,25 @@
       <div class="row">
         <label for="toneType">Ton-Art</label>
         <select id="toneType">
-          <option value="sine">Sine (sauber)</option>
+          <option value="sine">Sine</option>
           <option value="square">Square</option>
           <option value="sawtooth">Saw</option>
           <option value="triangle">Triangle</option>
           <option value="horn">Hupe</option>
           <option value="fart">Pupsen</option>
-          <option value="pluck">Pluck (Saiten-ähnlich)</option>
-          <option value="noise">Rauschen</option>
+          <option value="pluck">Pluck</option>
+          <option value="noise">Noise</option>
         </select>
       </div>
 
       <div class="row">
-        <label><input id="autoRestart" type="checkbox"/> Auto-Neustart nach letzter Schicht (statt Text)</label>
+        <label><input id="autoRestart" type="checkbox"/> Auto-Neustart nach letzter Schicht</label>
       </div>
     </div>
 
     <div class="hint">
-      <span class="kbd">Ziehen &amp; Loslassen</span> zum Schießen •
-      <span class="kbd">Tap/Klick</span> nahe Zentrum: Ball-Reset •
-      <span class="kbd">Neu starten</span> setzt Level neu
+      <span class="kbd">Ziehen &amp; Loslassen</span> zum Schießen (bei Linien: Start oben) •
+      <span class="kbd">Tap/Klick</span> nahe Zentrum/Start: Ball-Reset
     </div>
 
     <div class="actions">
@@ -187,17 +192,15 @@
 
 <script>
 (() => {
-  // ========= Canvas & Globals =========
+  // ===== Canvas & Globals =====
   const main = document.getElementById('c');
   const paint = document.getElementById('paintCanvas');
   const ctx = main.getContext('2d');
   const ptx = paint.getContext('2d');
   const dpr = Math.max(1, window.devicePixelRatio || 1);
 
-  let W=0,H=0,CX=0,CY=0;
-  let pxPerMM=3.78*dpr; // Fallback, wird kalibriert
+  let W=0,H=0,CX=0,CY=0, pxPerMM=3.78*dpr;
 
-  // Screens / HUD
   const startScreen = document.getElementById('startScreen');
   const hud = document.getElementById('hud');
   const elLayers = document.getElementById('layersLeft');
@@ -206,7 +209,7 @@
   const btnBack  = document.getElementById('backMenu');
   const elMsg    = document.getElementById('msg');
 
-  // Options UI
+  // ===== UI =====
   const ui = {
     shape: document.getElementById('shape'),
     numRings: document.getElementById('numRings'),
@@ -222,7 +225,7 @@
     trailLenVal: document.getElementById('trailLenVal'),
     multi: document.getElementById('multi'),
     drawMode: document.getElementById('drawMode'),
-    // Audio neu:
+    drawColorMode: document.getElementById('drawColorMode'),
     pitchShift: document.getElementById('pitchShift'),
     pitchShiftVal: document.getElementById('pitchShiftVal'),
     toneDur: document.getElementById('toneDur'),
@@ -234,9 +237,9 @@
   };
 
   function updateOpenUnitLabel(){
-    const isPoly = ui.shape.value !== 'circle';
-    ui.openWidthLbl.firstChild.textContent = isPoly ? "Öffnung (mm): " : "Öffnung (°): ";
-    ui.openWidthVal.textContent = ui.openWidth.value + (isPoly ? " mm" : "°");
+    const isLines = ui.shape.value === 'lines';
+    ui.openWidthLbl.firstChild.textContent = isLines ? "Öffnung (mm): " : "Öffnung (°): ";
+    ui.openWidthVal.textContent = ui.openWidth.value + (isLines ? " mm" : "°");
   }
   function syncLabels(){
     ui.numRingsVal.textContent = ui.numRings.value;
@@ -247,15 +250,13 @@
     ui.toneDurVal.textContent = parseFloat(ui.toneDur.value).toFixed(2) + " s";
     updateOpenUnitLabel();
   }
-  [ui.numRings, ui.openWidth, ui.shotSpeed, ui.gravity, ui.trailLen, ui.pitchShift, ui.toneDur, ui.shape].forEach(el=>{
-    el.addEventListener('input', syncLabels);
-    el.addEventListener('change', syncLabels);
-  });
+  [ui.numRings, ui.openWidth, ui.shotSpeed, ui.gravity, ui.trailLen, ui.pitchShift, ui.toneDur, ui.shape, ui.drawColorMode]
+    .forEach(el=>{ el.addEventListener('input', syncLabels); el.addEventListener('change', syncLabels); });
   syncLabels();
 
-  // ========= Audio =========
+  // ===== Audio =====
   let audioCtx=null, masterGain=null, bounceCount=0;
-  const scaleSemitones=[0,3,5,7,10,12,15,17]; // 8 Töne
+  const scaleSemitones=[0,3,5,7,10,12,15,17];
   const seqState = { idx:0, dir:1 };
   function resetToneSeq(){
     const N=scaleSemitones.length;
@@ -268,253 +269,188 @@
     if (mode==='random') return Math.floor(Math.random()*N);
     const out = seqState.idx;
     seqState.idx += seqState.dir;
-    if (seqState.idx>=N-1 || seqState.idx<=0) seqState.dir *= -1; // Ping-Pong
+    if (seqState.idx>=N-1 || seqState.idx<=0) seqState.dir *= -1;
     return out;
   }
-
   function initAudio(){
     if(!audioCtx){ audioCtx=new (window.AudioContext||window.webkitAudioContext)();
       masterGain=audioCtx.createGain(); masterGain.gain.value=0.18; masterGain.connect(audioCtx.destination);
     }
     if(audioCtx.state==='suspended') audioCtx.resume();
   }
-
   function playBounce(){
     if(!audioCtx) return;
     const t=audioCtx.currentTime;
-
-    // Pitch-Shift in Halbtönen (-5..+5)
     const shift = parseInt(ui.pitchShift.value,10) || 0;
-
     const idx = nextScaleIndex();
     const octave = (Math.floor(bounceCount/scaleSemitones.length))%2;
     const semi   = scaleSemitones[idx] + 12*octave + shift;
     const freq   = 220*Math.pow(2, semi/12);
     const dur = Math.max(0.22, Math.min(5, parseFloat(ui.toneDur.value)||0.22));
-
     const type = ui.toneType.value;
 
-    // Ton-Engines
     if (type==='noise'){
-      const len = Math.max(0.05, Math.min(5, dur));
-      const sr  = audioCtx.sampleRate;
+      const len=Math.max(0.05, Math.min(5, dur)), sr=audioCtx.sampleRate;
       const buffer = audioCtx.createBuffer(1, Math.floor(sr*len), sr);
-      const data = buffer.getChannelData(0);
-      for (let i=0;i<data.length;i++) data[i] = (Math.random()*2-1);
-      const src = audioCtx.createBufferSource(); src.buffer = buffer;
-      const bp = audioCtx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=freq; bp.Q.value=2.5;
-      const g = audioCtx.createGain();
-      g.gain.setValueAtTime(0.001, t);
-      g.gain.exponentialRampToValueAtTime(0.4, t+0.01);
-      g.gain.exponentialRampToValueAtTime(0.0008, t+len);
-      src.connect(bp); bp.connect(g); g.connect(masterGain);
-      src.start(t); src.stop(t+len);
+      const data = buffer.getChannelData(0); for (let i=0;i<data.length;i++) data[i]=(Math.random()*2-1);
+      const src=audioCtx.createBufferSource(); src.buffer=buffer;
+      const bp=audioCtx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=freq; bp.Q.value=2.5;
+      const g=audioCtx.createGain(); g.gain.setValueAtTime(0.001,t); g.gain.exponentialRampToValueAtTime(0.4,t+0.01); g.gain.exponentialRampToValueAtTime(0.0008,t+len);
+      src.connect(bp); bp.connect(g); g.connect(masterGain); src.start(t); src.stop(t+len);
     } else if (type==='horn'){
       const osc=audioCtx.createOscillator(); osc.type='sawtooth'; osc.frequency.setValueAtTime(freq,t);
-      const lfo=audioCtx.createOscillator(); lfo.type='sine'; lfo.frequency.value=6; // Vibrato
-      const lfoGain=audioCtx.createGain(); lfoGain.gain.value=8; // ±8 Hz
-      const g=audioCtx.createGain();
-      g.gain.setValueAtTime(0.001,t);
-      g.gain.exponentialRampToValueAtTime(0.5,t+0.02);
-      g.gain.exponentialRampToValueAtTime(0.0008, t+dur);
-      lfo.connect(lfoGain); lfoGain.connect(osc.frequency);
-      osc.connect(g); g.connect(masterGain);
+      const lfo=audioCtx.createOscillator(); lfo.type='sine'; lfo.frequency.value=6; const lfoG=audioCtx.createGain(); lfoG.gain.value=8;
+      const g=audioCtx.createGain(); g.gain.setValueAtTime(0.001,t); g.gain.exponentialRampToValueAtTime(0.5,t+0.02); g.gain.exponentialRampToValueAtTime(0.0008,t+dur);
+      lfo.connect(lfoG); lfoG.connect(osc.frequency); osc.connect(g); g.connect(masterGain);
       osc.start(t); lfo.start(t); osc.stop(t+dur+0.02); lfo.stop(t+dur+0.02);
     } else if (type==='fart'){
       const osc=audioCtx.createOscillator(); osc.type='square';
-      const f0 = Math.max(40, Math.min(160, freq*0.35));
-      osc.frequency.setValueAtTime(f0, t);
-      osc.frequency.exponentialRampToValueAtTime(40, t+dur*0.8);
+      const f0=Math.max(40, Math.min(160, freq*0.35)); osc.frequency.setValueAtTime(f0,t); osc.frequency.exponentialRampToValueAtTime(40,t+dur*0.8);
       const lp=audioCtx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=280;
-      const g=audioCtx.createGain();
-      g.gain.setValueAtTime(0.001,t);
-      g.gain.exponentialRampToValueAtTime(0.6,t+0.015);
-      g.gain.exponentialRampToValueAtTime(0.0008,t+dur);
-      osc.connect(lp); lp.connect(g); g.connect(masterGain);
-      osc.start(t); osc.stop(t+dur+0.02);
+      const g=audioCtx.createGain(); g.gain.setValueAtTime(0.001,t); g.gain.exponentialRampToValueAtTime(0.6,t+0.015); g.gain.exponentialRampToValueAtTime(0.0008,t+dur);
+      osc.connect(lp); lp.connect(g); g.connect(masterGain); osc.start(t); osc.stop(t+dur+0.02);
     } else if (type==='pluck'){
-      // Rauschen + Bandpass mit schnellem Decay (simple Karplus-Strong-Anmutung)
-      const len = Math.max(0.1, Math.min(3, dur));
-      const sr  = audioCtx.sampleRate;
-      const buffer = audioCtx.createBuffer(1, Math.floor(sr*len), sr);
-      const data = buffer.getChannelData(0);
-      for (let i=0;i<data.length;i++) data[i] = (Math.random()*2-1);
-      const src = audioCtx.createBufferSource(); src.buffer = buffer; src.loop=false;
-      const bp  = audioCtx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=freq*2; bp.Q.value=8;
-      const g=audioCtx.createGain();
-      g.gain.setValueAtTime(0.001,t);
-      g.gain.exponentialRampToValueAtTime(0.7,t+0.003);
-      g.gain.exponentialRampToValueAtTime(0.0006,t+len);
-      src.connect(bp); bp.connect(g); g.connect(masterGain);
-      src.start(t); src.stop(t+len);
+      const len=Math.max(0.1, Math.min(3, dur)), sr=audioCtx.sampleRate;
+      const buffer=audioCtx.createBuffer(1, Math.floor(sr*len), sr); const data=buffer.getChannelData(0); for (let i=0;i<data.length;i++) data[i]=(Math.random()*2-1);
+      const src=audioCtx.createBufferSource(); src.buffer=buffer;
+      const bp=audioCtx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=freq*2; bp.Q.value=8;
+      const g=audioCtx.createGain(); g.gain.setValueAtTime(0.001,t); g.gain.exponentialRampToValueAtTime(0.7,t+0.003); g.gain.exponentialRampToValueAtTime(0.0006,t+len);
+      src.connect(bp); bp.connect(g); g.connect(masterGain); src.start(t); src.stop(t+len);
     } else {
-      // Standard-Oszillatoren
-      const osc=audioCtx.createOscillator();
-      osc.type = type; // sine/square/sawtooth/triangle
-      osc.frequency.setValueAtTime(freq,t);
-      const g=audioCtx.createGain();
-      g.gain.setValueAtTime(0.001,t);
-      g.gain.exponentialRampToValueAtTime(0.35,t+0.012);
-      g.gain.exponentialRampToValueAtTime(0.0008,t+dur);
-      osc.connect(g); g.connect(masterGain);
-      osc.start(t); osc.stop(t+dur+0.02);
+      const osc=audioCtx.createOscillator(); osc.type=type; osc.frequency.setValueAtTime(freq,t);
+      const g=audioCtx.createGain(); g.gain.setValueAtTime(0.001,t); g.gain.exponentialRampToValueAtTime(0.35,t+0.012); g.gain.exponentialRampToValueAtTime(0.0008,t+dur);
+      osc.connect(g); g.connect(masterGain); osc.start(t); osc.stop(t+dur+0.02);
     }
 
     bounceCount++; elBounces.textContent=bounceCount;
   }
 
-  // ========= Math/Utils =========
+  // ===== Math/Utils =====
   function angleNorm(a){ a%=Math.PI*2; return a<0?a+Math.PI*2:a; }
   function angleDiff(a,b){ let d=angleNorm(a)-angleNorm(b); d=(d+Math.PI)%(Math.PI*2)-Math.PI; return Math.abs(d); }
   function inOpening(theta, center, width){ return angleDiff(theta, center)<= (width*0.5); }
 
-  function radialToRegularPolygon(theta, R, n, rot){
-    if (n<=0) return R; // circle fallback
-    const a = ((theta - rot)%(Math.PI*2)+Math.PI*2)%(Math.PI*2);
-    const sector = Math.PI*2/n;
-    const half = sector*0.5;
-    const denom = Math.cos((a%sector)-half);
-    const c = Math.cos(half);
-    return R * c / Math.max(0.0001, denom);
-  }
-  function polygonEdgeNormalAngle(theta, n, rot){
-    if (n<=0) return theta; // circle radial normal
-    const sector = Math.PI*2/n;
-    const a = ((theta - rot)%(Math.PI*2)+Math.PI*2)%(Math.PI*2);
-    const k = Math.floor(a/sector);
-    return rot + k*sector; // outward normal angle
-  }
-  function reflectVelocity(vx, vy, nx, ny){
-    const dot = vx*nx + vy*ny;
-    return { vx: vx - 2*dot*nx, vy: vy - 2*dot*ny };
-  }
-
-  // ========= Game State =========
+  // ===== State =====
   const BASE_ROT_SPEED=0.9, MAX_SUBSTEPS=16, SUBSTEP_PIXELS=0.7, MAX_BALLS=200;
-  let rings=[]; // ordered inner -> outer
+  let rings=[]; // für Kreis
+  let lines=[]; // für Linien
   let ringsLeft=0;
-  let NUM_RINGS=10, OPEN_WIDTH_VAL=40, MAX_SHOT=1100, G=1300;
+  let NUM_RINGS=10, OPEN_VAL=40, MAX_SHOT=1100, G=1300;
   let TRAIL_MAX=70;
   let ballRadius=6;
   let launched=false, aiming=true, aimX=0, aimY=0, finished=false;
-
-  // Balls with per-ball current ring index + hue for draw mode
   const balls=[];
   function makeBall(x,y,vx=0,vy=0){
-    return { x, y, px:x, py:y, vx, vy, r:ballRadius, trail:[], ringIndex:0, hue:Math.random()*360 };
+    return { x, y, px:x, py:y, vx, vy, r:ballRadius, trail:[], ringIndex:0, hue:Math.random()*360, neonPhase:Math.random() };
   }
 
-  // ========= Layout / Zoom =========
+  // ===== Layout / Resize =====
   function calibrateMM(){
     const mmDiv = document.getElementById('mmCal');
-    const wCss = mmDiv.getBoundingClientRect().width; // CSS-px für 10 mm
-    if (wCss>0) pxPerMM = (wCss/10) * dpr; // Canvas-px pro mm
+    const wCss = mmDiv.getBoundingClientRect().width;
+    if (wCss>0) pxPerMM = (wCss/10) * dpr;
   }
   function resize(){
     const rect = main.getBoundingClientRect();
     const w = Math.floor(rect.width*dpr), h = Math.floor(rect.height*dpr);
     if (w===W && h===H) return;
-    W = w; H = h;
-    main.width=W; main.height=H;
-    paint.width=W; paint.height=H;
-    CX=W/2; CY=H/2;
+    W=w; H=h; main.width=W; main.height=H; paint.width=W; paint.height=H; CX=W/2; CY=H/2;
     calibrateMM();
   }
   window.addEventListener('resize', resize, {passive:true});
 
   function computeLevel(){
-    // read UI
     NUM_RINGS=+ui.numRings.value;
-    OPEN_WIDTH_VAL=+ui.openWidth.value; // Kreis: Grad, Polygon: Millimeter
+    OPEN_VAL=+ui.openWidth.value;
     MAX_SHOT=+ui.shotSpeed.value; G=+ui.gravity.value; TRAIL_MAX=+ui.trailLen.value;
 
-    finished=false;
-    resetToneSeq();
+    finished=false; resetToneSeq();
 
-    // --- Auto-zoom: Außenring garantiert sichtbar, konstanter Randabstand ---
-    const edgeGap = Math.max(22*dpr, 16);                 // fixer Abstand zum Displayrand
-    const Ravail = Math.min(W,H)/2 - edgeGap;             // max. Außenradius
-    const gapRatio = 0.33;
-    const spanFactor = (NUM_RINGS + (NUM_RINGS-1)*gapRatio);
+    rings.length=0; lines.length=0;
 
-    let innerStart = 28*dpr;
-    let thickness = (Ravail - innerStart) / spanFactor;
+    const shape = ui.shape.value;
 
-    if (!isFinite(thickness) || thickness <= 0){
-      thickness = Math.max(1.5*dpr, Ravail / Math.max(1, spanFactor+1));
-      innerStart = Math.max(8*dpr, Ravail - thickness*spanFactor);
-    } else if (thickness < 1.5*dpr){
-      thickness = Math.max(1.5*dpr, (Ravail - 8*dpr)/spanFactor);
-      innerStart = Math.max(8*dpr, Ravail - thickness*spanFactor);
-    }
+    if (shape==='circle'){
+      // --- Autozoom für 30 Ringe mit konstantem Außenabstand ---
+      const edgeGap = Math.max(22*dpr, 16);
+      const Ravail = Math.min(W,H)/2 - edgeGap;
+      const gapRatio = 0.33;
+      const spanFactor = (NUM_RINGS + (NUM_RINGS-1)*gapRatio);
 
-    const gap = thickness * gapRatio;
+      let innerStart = 28*dpr;
+      let thickness = (Ravail - innerStart) / spanFactor;
+      if (!isFinite(thickness) || thickness <= 0){
+        thickness = Math.max(1.5*dpr, Ravail / Math.max(1, spanFactor+1));
+        innerStart = Math.max(8*dpr, Ravail - thickness*spanFactor);
+      } else if (thickness < 1.5*dpr){
+        thickness = Math.max(1.5*dpr, (Ravail - 8*dpr)/spanFactor);
+        innerStart = Math.max(8*dpr, Ravail - thickness*spanFactor);
+      }
+      const gap = thickness * gapRatio;
 
-    // build rings
-    rings.length=0;
-    const shape = ui.shape.value; // 'circle' | 'triangle' | 'square'
-    let nSides = 0;
-    if (shape==='triangle') nSides=3;
-    else if (shape==='square') nSides=4;
-
-    // Polygone: gleiche Rotationsgeschwindigkeit & Orientierung für alle Schichten
-    let sharedRotSpeed = 0;
-    let sharedPolyRot0 = 0;
-    if (nSides>0){
-      const signDir = Math.random()<0.5?-1:1;
-      const factor = 0.75 + Math.random()*0.5; // 0.75..1.25
-      sharedRotSpeed = signDir * BASE_ROT_SPEED * factor;
-      sharedPolyRot0 = Math.random()*Math.PI*2;
-    }
-
-    for (let i=0;i<NUM_RINGS;i++){
-      const innerCirc = innerStart + i*(thickness+gap);
-      const outerCirc = innerCirc + thickness;
-      const midCirc   = (innerCirc + outerCirc)*0.5;
-
-      let openCenter = Math.random()*Math.PI*2;
-      let openWidthAngle;
-
-      if (nSides===0){
-        // Kreis: Öffnungswinkel in Grad
-        openWidthAngle = OPEN_WIDTH_VAL * Math.PI/180;
+      for (let i=0;i<NUM_RINGS;i++){
+        const innerCirc = innerStart + i*(thickness+gap);
+        const outerCirc = innerCirc + thickness;
+        const midCirc   = (innerCirc + outerCirc)*0.5;
+        const openCenter = Math.random()*Math.PI*2;
+        const openWidthAngle = OPEN_VAL * Math.PI/180;
         const signDir = Math.random()<0.5?-1:1;
-        const factor = 0.5 + Math.random(); // 0.5..1.5
+        const factor = 0.5 + Math.random();
         const rotSpeed = signDir * BASE_ROT_SPEED * factor;
-        const polyRot = Math.random()*Math.PI*2;
-        rings.push({ shape, nSides, innerCirc, outerCirc, midCirc, openCenter, openWidthAngle, rotSpeed, polyRot, removed:false });
-      } else {
-        // Dreieck/Quadrat: Öffnung in Millimeter (am Bildschirm), in Winkel konvertieren
-        const arcLenPx = OPEN_WIDTH_VAL * pxPerMM;
-        openWidthAngle = Math.max(arcLenPx / Math.max(1, midCirc), 0.02); // Mindestbreite
-        rings.push({
-          shape, nSides, innerCirc, outerCirc, midCirc,
-          openCenter, openWidthAngle,
-          rotSpeed: sharedRotSpeed,
-          polyRot: sharedPolyRot0,
-          removed:false
+        const polyRot = Math.random()*Math.PI*2; // nur für Glanz
+        rings.push({ innerCirc, outerCirc, midCirc, openCenter, openWidthAngle, rotSpeed, polyRot, removed:false });
+      }
+      ballRadius = Math.max(5*dpr, thickness * 0.23);
+      resetRunState(shape);
+
+    } else {
+      // ===== LINIEN: horizontale Balken mit Öffnung (mm), Ball fällt von oben nach unten =====
+      const topGapPx = 24*dpr;        // Abstand zur Oberkante
+      const bottomGapPx = 24*dpr;     // Abstand zur Unterkante
+      const avail = H - topGapPx - bottomGapPx;
+      const gapRatio = 0.33;
+      const spanFactor = (NUM_RINGS + (NUM_RINGS-1)*gapRatio);
+
+      let thickness = Math.max(10*dpr, avail / (spanFactor+0.0001));
+      let gap = thickness * gapRatio;
+
+      // Falls es zu hoch wird, skaliere thickness/gap gleichmäßig
+      const totalNeeded = NUM_RINGS*thickness + (NUM_RINGS-1)*gap;
+      if (totalNeeded > avail){
+        const scale = avail / totalNeeded;
+        thickness *= scale; gap *= scale;
+      }
+
+      const openPx = Math.max(6, OPEN_VAL * pxPerMM); // Öffnung in mm -> px
+      for (let i=0;i<NUM_RINGS;i++){
+        const yCenter = topGapPx + thickness/2 + i*(thickness+gap);
+        const rotSpeed = BASE_ROT_SPEED * (0.6 + Math.random()*0.8) * (Math.random()<0.5?-1:1);
+        // Öffnung initial irgendwo in der Breite
+        const openX = Math.random()*W;
+        lines.push({
+          y: yCenter, halfT: thickness/2, openX, openW: openPx, rotSpeed, removed:false
         });
       }
+      ballRadius = Math.max(5*dpr, thickness * 0.35);
+      resetRunState(shape);
     }
 
-    ballRadius = Math.max(5*dpr, thickness * 0.23);
-    resetRunState();
     elMsg.style.display='none';
-    ringsLeft = rings.length;
+    ringsLeft = (ui.shape.value==='circle' ? rings.length : lines.length);
     elLayers.textContent = String(ringsLeft);
     bounceCount = 0; elBounces.textContent = "0";
   }
 
-  function resetRunState(){
-    // clear paint layer (nur bei Level-Neustart)
+  function resetRunState(shapeMode){
     ptx.clearRect(0,0,W,H);
-    ptx.lineCap='round'; ptx.lineJoin='round'; // schöne Linien
-    ptx.globalAlpha = 0.95;
+    ptx.lineCap='round'; ptx.lineJoin='round';
 
     balls.length=0;
-    // fixierter Spawn Offset = 20px nach unten
-    const spawnX = CX;
-    const spawnY = CY + 20*dpr;
+    let spawnX = CX, spawnY = CY + 20*dpr;
+    if ((shapeMode||ui.shape.value)==='lines'){ // Spawn oben
+      spawnX = CX;
+      spawnY = Math.max(18*dpr, 10); // knapp unter oberem Rand
+    }
     const b = makeBall(spawnX, spawnY, 0, 0);
     b.trail.push({x:b.x,y:b.y});
     balls.push(b);
@@ -522,16 +458,14 @@
   }
 
   function resetToMenuState(){
-    // Alles stoppen/aufräumen (nichts läuft im Hintergrund weiter)
     launched=false; aiming=false; finished=false;
-    rings.length=0; balls.length=0;
+    rings.length=0; lines.length=0; balls.length=0;
     ctx.clearRect(0,0,W,H); ptx.clearRect(0,0,W,H);
-    elMsg.style.display='none';
-    bounceCount=0; elBounces.textContent='0'; elLayers.textContent='0';
+    elMsg.style.display='none'; bounceCount=0; elBounces.textContent='0'; elLayers.textContent='0';
     try { if (audioCtx && audioCtx.state!=='closed') audioCtx.suspend(); } catch(e){}
   }
 
-  // ========= Input =========
+  // ===== Input =====
   function getPos(e){
     const rect=main.getBoundingClientRect();
     if (e.touches && e.touches.length){
@@ -542,18 +476,13 @@
   function pointerDown(e){
     initAudio();
     const p=getPos(e);
-    if (!launched){
-      aiming=true; aimX=p.x; aimY=p.y;
-    } else {
-      // Klick nahe Zentrum = Reset Run
+    if (!launched){ aiming=true; aimX=p.x; aimY=p.y; }
+    else {
       const dx=p.x-CX, dy=p.y-CY;
       if (Math.hypot(dx,dy)<Math.min(W,H)*0.08) resetRunState();
     }
   }
-  function pointerMove(e){
-    if(!aiming) return;
-    const p=getPos(e); aimX=p.x; aimY=p.y;
-  }
+  function pointerMove(e){ if(!aiming) return; const p=getPos(e); aimX=p.x; aimY=p.y; }
   function pointerUp(){
     if (!aiming) return;
     const ax=aimX-CX, ay=aimY-CY;
@@ -564,8 +493,7 @@
       const dirx=ax/len, diry=ay/len;
       const v= MAX_SHOT * (pull/maxPull*0.75 + 0.25);
       for (const b of balls){ b.vx=dirx*v; b.vy=diry*v; }
-      launched=true; aiming=false;
-      initAudio();
+      launched=true; aiming=false; initAudio();
     }
   }
   main.addEventListener('mousedown', pointerDown);
@@ -577,121 +505,160 @@
 
   btnReset.addEventListener('click', ()=>{ computeLevel(); });
 
-  // ========= Physics: Kollision identisch zum Kreis-Material (auch bei Polygonen) =========
+  // ===== Kollisionslogik =====
   function reflectRadial(b){
     const r = Math.hypot(b.x-CX, b.y-CY); if (r===0) return;
     const nx=(b.x-CX)/r, ny=(b.y-CY)/r;
-    const rv = reflectVelocity(b.vx,b.vy,nx,ny); b.vx=rv.vx; b.vy=rv.vy;
-  }
-  function reflectPolygon(b, theta, nSides, rot){
-    if (nSides<=0){ reflectRadial(b); return; }
-    const nAng = polygonEdgeNormalAngle(theta, nSides, rot);
-    const nx=Math.cos(nAng), ny=Math.sin(nAng);
-    const rv = reflectVelocity(b.vx,b.vy,nx,ny); b.vx=rv.vx; b.vy=rv.vy;
+    const dot = b.vx*nx + b.vy*ny;
+    b.vx -= 2*dot*nx; b.vy -= 2*dot*ny;
   }
 
-  function processRingForBall(b, ring){
-    if (finished) return;
+  function processRingForBall_Circle(b, ring){
     const rNow = Math.hypot(b.x-CX, b.y-CY);
     const rPrev= Math.hypot(b.px-CX, b.py-CY);
     const thNow= angleNorm(Math.atan2(b.y-CY, b.x-CX));
 
-    // Grenzen (Material wie beim Kreis – aber Radien folgen Polygongeometrie)
-    let innerB, outerB;
-    if (ring.nSides>0){
-      innerB = radialToRegularPolygon(thNow, ring.innerCirc, ring.nSides, ring.polyRot) + b.r;
-      outerB = radialToRegularPolygon(thNow, ring.outerCirc, ring.nSides, ring.polyRot) - b.r;
-    } else {
-      innerB = ring.innerCirc + b.r;
-      outerB = ring.outerCirc - b.r;
-    }
-
+    const innerB = ring.innerCirc + b.r;
+    const outerB = ring.outerCirc - b.r;
     const open = inOpening(thNow, ring.openCenter, ring.openWidthAngle);
 
-    // Inner Crossing
+    // inner
     if (rPrev < innerB && rNow >= innerB){
       if (!open){
         const ux=(b.x-CX)/(rNow||1), uy=(b.y-CY)/(rNow||1);
         const snap = (innerB - 0.01);
         b.x = CX + ux*snap; b.y = CY + uy*snap;
-        if (ring.nSides>0) reflectPolygon(b, thNow, ring.nSides, ring.polyRot); else reflectRadial(b);
-        playBounce();
+        reflectRadial(b); playBounce();
       }
     } else if (rPrev > innerB && rNow <= innerB){
       if (!open){
         const ux=(b.x-CX)/(rNow||1), uy=(b.y-CY)/(rNow||1);
         const snap = (innerB + 0.01);
         b.x = CX + ux*snap; b.y = CY + uy*snap;
-        if (ring.nSides>0) reflectPolygon(b, thNow, ring.nSides, ring.polyRot); else reflectRadial(b);
-        playBounce();
+        reflectRadial(b); playBounce();
       }
     }
-
-    // Outer Crossing
+    // outer
     if (rPrev < outerB && rNow >= outerB){
       if (open){
-        // Verlassen: Ring entfernen, ringIndex erhöhen, Multiball hier
         if (!ring.removed){
           ring.removed = true;
           ringsLeft = rings.filter(r=>!r.removed).length;
           elLayers.textContent = String(ringsLeft);
           if (ringsLeft===0){
-            if (ui.autoRestart.checked){
-              computeLevel();
-              return;
-            } else {
-              // Freeze statt weiterhüpfen
-              launched=false; aiming=false; finished=true;
-              elMsg.style.display='block';
-            }
+            if (ui.autoRestart.checked){ computeLevel(); return; }
+            else { launched=false; aiming=false; finished=true; elMsg.style.display='block'; }
           }
         }
         b.ringIndex++;
         if (ui.multi.checked && balls.length < MAX_BALLS){
-          const speed = Math.hypot(b.vx,b.vy);
-          const ang   = Math.atan2(b.vy,b.vx);
-          const delta = 0.18;
-          const nb = makeBall(b.x, b.y, Math.cos(ang+delta)*speed, Math.sin(ang+delta)*speed);
-          nb.ringIndex = b.ringIndex;
-          balls.push(nb);
-          b.vx = Math.cos(ang-delta)*speed; b.vy = Math.sin(ang-delta)*speed;
+          const speed = Math.hypot(b.vx,b.vy), ang=Math.atan2(b.vy,b.vx), d=0.18;
+          const nb = makeBall(b.x, b.y, Math.cos(ang+d)*speed, Math.sin(ang+d)*speed);
+          nb.ringIndex = b.ringIndex; balls.push(nb);
+          b.vx = Math.cos(ang-d)*speed; b.vy = Math.sin(ang-d)*speed;
         }
       } else {
         const ux=(b.x-CX)/(rNow||1), uy=(b.y-CY)/(rNow||1);
         const snap = (outerB - 0.01);
         b.x = CX + ux*snap; b.y = CY + uy*snap;
-        if (ring.nSides>0) reflectPolygon(b, thNow, ring.nSides, ring.polyRot); else reflectRadial(b);
-        playBounce();
+        reflectRadial(b); playBounce();
       }
     } else if (rPrev > outerB && rNow <= outerB){
       if (!open){
         const ux=(b.x-CX)/(rNow||1), uy=(b.y-CY)/(rNow||1);
         const snap = (outerB + 0.01);
         b.x = CX + ux*snap; b.y = CY + uy*snap;
-        if (ring.nSides>0) reflectPolygon(b, thNow, ring.nSides, ring.polyRot); else reflectRadial(b);
-        playBounce();
+        reflectRadial(b); playBounce();
       }
     }
   }
 
-  // ========= Loop =========
+  function processRingForBall_Lines(b){
+    if (finished) return;
+    // aktive Ebene anhand ringIndex
+    let idx = b.ringIndex;
+    while (idx < lines.length && lines[idx].removed) idx++;
+    b.ringIndex = idx;
+    if (idx >= lines.length) return;
+
+    const L = lines[idx];
+    const yTop = L.y - L.halfT;
+    const yBot = L.y + L.halfT;
+
+    // Öffnung: [openX - openW/2, openX + openW/2]
+    const left = L.openX - L.openW/2;
+    const right= L.openX + L.openW/2;
+
+    // Prüfe Überquerungen der oberen/unteren Kante
+    const prevAboveTop = (b.py <= yTop - b.r), nowBelowTop = (b.y  >= yTop + b.r);
+    const prevAboveMid = (b.py <= L.y), nowBelowMid = (b.y >= L.y);
+    const prevAboveBot = (b.py <= yBot - b.r), nowBelowBot = (b.y  >= yBot + b.r);
+
+    // Wenn durch den Balkenbereich läuft und NICHT durch Öffnung -> reflektieren an der Kante
+    // Wir checken zuerst obere Kante
+    if (prevAboveTop && nowBelowTop){
+      if (!(b.x >= left && b.x <= right)){
+        b.y = yTop - b.r - 0.01; // zurücksetzen
+        b.vy = -Math.abs(b.vy);  // reflektieren
+        playBounce();
+        return;
+      }
+    }
+    // Mittellinie (zählt als "durchbrochen", wenn durch Öffnung)
+    if (prevAboveMid && nowBelowMid){
+      if ((b.x >= left && b.x <= right)){
+        // Ebene erfolgreich passiert
+        L.removed = true;
+        b.ringIndex++;
+        ringsLeft = lines.filter(r=>!r.removed).length;
+        elLayers.textContent = String(ringsLeft);
+        if (ringsLeft===0){
+          if (ui.autoRestart.checked){ computeLevel(); return; }
+          else { launched=false; aiming=false; finished=true; elMsg.style.display='block'; }
+        }
+        if (ui.multi.checked && balls.length < MAX_BALLS){
+          const speed = Math.hypot(b.vx,b.vy), ang=Math.atan2(b.vy,b.vx), d=0.14;
+          const nb = makeBall(b.x, b.y, Math.cos(ang+d)*speed, Math.sin(ang+d)*speed);
+          nb.ringIndex = b.ringIndex; balls.push(nb);
+          b.vx = Math.cos(ang-d)*speed; b.vy = Math.sin(ang-d)*speed;
+        }
+      }
+    }
+    // Untere Kante – falls hineinläuft ohne Öffnung (von unten zurückprallen)
+    if (!prevAboveBot && (b.py >= yBot + b.r) && (b.y <= yBot - b.r)){
+      // seltene Richtung (aufwärts), hier überspringen – Gravitation zieht ohnehin nach unten
+    }
+  }
+
+  // ===== Loop =====
   let lastT=0;
   function step(ts){
     const t=ts/1000;
     const dtFull=Math.min(0.033, t-lastT || 0.016);
     lastT=t;
 
-    // Rotate rings
-    for (const ring of rings){
-      if (ring.removed) continue;
-      // Öffnung & Orientierung drehen
-      ring.openCenter = angleNorm(ring.openCenter + ring.rotSpeed*dtFull);
-      ring.polyRot    = angleNorm(ring.polyRot    + (ring.nSides>0 ? ring.rotSpeed : ring.rotSpeed*0.5)*dtFull);
+    // Öffnungen bewegen
+    if (ui.shape.value==='circle'){
+      for (const ring of rings){
+        if (ring.removed) continue;
+        ring.openCenter = angleNorm(ring.openCenter + ring.rotSpeed*dtFull);
+        ring.polyRot    = angleNorm(ring.polyRot    + ring.rotSpeed*0.5*dtFull);
+      }
+    } else {
+      for (const L of lines){
+        if (L.removed) continue;
+        // Öffnung horizontal sinusförmig bewegen (wie "Rotation")
+        // Amplitudenbegrenzung: mind. Randabstand 20px
+        const margin = Math.max(20*dpr, L.openW*0.6);
+        const amp = (W/2 - margin);
+        // openX oszilliert um CX
+        const phase = (performance.now()*0.001) * L.rotSpeed;
+        L.openX = CX + Math.sin(phase)*amp;
+      }
     }
 
     // Physics
     if (launched){
-      // Substeps
       let maxSpeed=0;
       for (const b of balls) maxSpeed=Math.max(maxSpeed, Math.hypot(b.vx,b.vy));
       const desiredSteps=Math.ceil((maxSpeed*dtFull)/SUBSTEP_PIXELS);
@@ -702,19 +669,15 @@
         for (const b of balls){
           b.px=b.x; b.py=b.y;
 
-          // gravity
-          b.vy += G*dt;
+          b.vy += G*dt;      // gravity
+          b.x  += b.vx*dt;   // move
+          b.y  += b.vy*dt;
 
-          // move
-          b.x += b.vx*dt;
-          b.y += b.vy*dt;
-
-          // Kollision NUR mit aktueller Schicht
-          let idx = b.ringIndex;
-          while (idx < rings.length && rings[idx].removed) idx++;
-          b.ringIndex = idx;
-          if (idx < rings.length){
-            processRingForBall(b, rings[idx]);
+          if (ui.shape.value==='circle'){
+            let idx = b.ringIndex; while (idx < rings.length && rings[idx].removed) idx++; b.ringIndex = idx;
+            if (idx < rings.length) processRingForBall_Circle(b, rings[idx]);
+          } else {
+            processRingForBall_Lines(b);
           }
 
           // Wände
@@ -724,56 +687,98 @@
           if (b.y < margin){ b.y = margin; b.vy = Math.abs(b.vy); playBounce(); }
           if (b.y > H - margin){ b.y = H - margin; b.vy = -Math.abs(b.vy); playBounce(); }
 
-          // Trails
+          // Trails (normal)
           b.trail.push({x:b.x,y:b.y});
           if (!ui.drawMode.checked && b.trail.length>TRAIL_MAX) b.trail.shift();
 
-          // Zeichenmodus: permanent auf paint-Canvas malen (Regenbogen, langsamer Wechsel)
+          // Zeichenmodus – Farben/Palette + weiche, dunklere Ränder
           if (ui.drawMode.checked){
-            b.hue = (b.hue + 30*dt) % 360;
-            ptx.strokeStyle = `hsl(${b.hue}, 80%, 60%)`;
-            ptx.lineWidth = Math.max(1.5, b.r*0.9);
-            ptx.beginPath();
-            ptx.moveTo(b.px, b.py);
-            ptx.lineTo(b.x, b.y);
-            ptx.stroke();
+            // Bestimme Basisfarbe
+            let hue, sat=80, light=60; // HSL
+            const mode = ui.drawColorMode.value;
+            if (mode==='rainbow'){
+              b.hue = (b.hue + 30*dt) % 360;
+              hue = b.hue;
+            } else if (mode==='red'){ hue=0; }
+            else if (mode==='blue'){ hue=210; }
+            else if (mode==='green'){ hue=130; }
+            else if (mode==='magenta'){ hue=300; }
+            else if (mode==='cyan'){ hue=185; }
+            else if (mode==='yellow'){ hue=55; }
+            else if (mode==='white'){ hue=0; sat=0; light=96; }
+            else if (mode==='neon'){
+              // Neon-Palette zyklisch
+              const palette=[50, 140, 200, 290, 330];
+              b.neonPhase = (b.neonPhase + dt*0.4) % 1;
+              const idx = Math.floor(b.neonPhase * palette.length);
+              hue = palette[idx]; sat=95; light=62;
+            } else { hue=200; }
+
+            const core = `hsl(${hue} ${sat}% ${light}%)`;
+            const edge = `hsl(${hue} ${Math.max(0,sat-10)}% ${Math.max(0,light-18)}%)`;
+
+            // Outer (unscharfer, dunklerer Rand)
+            ptx.save();
+            ptx.globalAlpha = 0.65;
+            ptx.lineCap='round'; ptx.lineJoin='round';
+            ptx.strokeStyle = edge;
+            ptx.lineWidth = Math.max(1.5, b.r*1.6);
+            ptx.shadowColor = edge;
+            ptx.shadowBlur = Math.max(2, b.r*1.2);
+            ptx.beginPath(); ptx.moveTo(b.px, b.py); ptx.lineTo(b.x, b.y); ptx.stroke();
+            ptx.restore();
+
+            // Inner (heller Kern)
+            ptx.save();
+            ptx.globalAlpha = 0.95;
+            ptx.lineCap='round'; ptx.lineJoin='round';
+            ptx.strokeStyle = core;
+            ptx.lineWidth = Math.max(1.2, b.r*0.9);
+            ptx.beginPath(); ptx.moveTo(b.px, b.py); ptx.lineTo(b.x, b.y); ptx.stroke();
+            ptx.restore();
           }
         }
       }
     }
 
-    draw(dtFull);
+    draw();
     requestAnimationFrame(step);
   }
 
-  // ========= Render (main canvas) =========
+  // ===== Render =====
   function draw(){
-    // Hintergrund
     ctx.clearRect(0,0,W,H);
     const g = ctx.createRadialGradient(CX, CY, Math.min(W,H)*0.1, CX, CY, Math.min(W,H)*0.6);
     g.addColorStop(0, getComputedStyle(document.documentElement).getPropertyValue('--bg'));
     g.addColorStop(1, getComputedStyle(document.documentElement).getPropertyValue('--bg2'));
     ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
 
-    // Zentrum
-    ctx.beginPath(); ctx.arc(CX, CY, Math.max(2, 2.5*dpr), 0, Math.PI*2);
-    ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--accent'); ctx.fill();
+    // Zentrum / Startmarker
+    ctx.beginPath();
+    const markerR = Math.max(2, 2.5*dpr);
+    const mode = ui.shape.value;
+    if (mode==='circle'){
+      ctx.arc(CX, CY, markerR, 0, Math.PI*2);
+    }else{
+      ctx.arc(CX, Math.max(18*dpr, 10), markerR, 0, Math.PI*2);
+    }
+    ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--accent');
+    ctx.fill();
 
-    // Ringe
-    for (let i=0;i<rings.length;i++){
-      const ring=rings[i]; if (ring.removed) continue;
-      const hue = 200 + i*9;
-      const colorMain = `hsla(${hue}, 65%, 66%, 0.85)`;
-      const colorShine= `hsla(${hue}, 85%, 85%, 0.25)`;
-      const tInner = ring.innerCirc, tOuter = ring.outerCirc;
-      const thickness = (tOuter - tInner);
-
-      ctx.save();
-      ctx.lineCap='butt';
-
-      if (ring.nSides<=0){
-        // Kreisring mit Öffnung (Winkel)
+    if (ui.shape.value==='circle'){
+      // Ringe
+      for (let i=0;i<rings.length;i++){
+        const ring=rings[i]; if (ring.removed) continue;
+        const hue = 200 + i*9;
+        const colorMain = `hsla(${hue}, 65%, 66%, 0.85)`;
+        const colorShine= `hsla(${hue}, 85%, 85%, 0.25)`;
+        const tInner = ring.innerCirc, tOuter = ring.outerCirc;
+        const thickness = (tOuter - tInner);
         const midR = ring.midCirc;
+
+        ctx.save();
+        ctx.lineCap='butt';
+
         ctx.lineWidth = thickness;
         const gapHalf = ring.openWidthAngle*0.5;
         const start = ring.openCenter + gapHalf;
@@ -785,53 +790,41 @@
         ctx.strokeStyle=colorShine;
         ctx.lineWidth = Math.max(1, thickness*0.10);
         ctx.beginPath(); ctx.arc(CX, CY, midR - thickness*0.33, start, end, false); ctx.stroke();
-      } else {
-        // Polygon-Ring (Material identisch, Öffnung: Sektor wie beim Kreis – wird per "destination-out" herausgestanzt)
-        const n = ring.nSides, rot=ring.polyRot;
-        const sector = Math.PI*2/n;
-
-        function strokePolygonEdges(R, lw, strokeStyle){
-          ctx.strokeStyle = strokeStyle;
-          ctx.lineWidth = lw;
-          for (let k=0;k<n;k++){
-            const a1 = rot + k*sector;
-            const a2 = rot + (k+1)*sector;
-            const x1 = CX + Math.cos(a1)*R, y1 = CY + Math.sin(a1)*R;
-            const x2 = CX + Math.cos(a2)*R, y2 = CY + Math.sin(a2)*R;
-            ctx.beginPath();
-            ctx.moveTo(x1,y1); ctx.lineTo(x2,y2);
-            ctx.stroke();
-          }
-        }
-
-        // Zuerst komplett zeichnen
-        strokePolygonEdges(tOuter, 2, colorMain);
-        strokePolygonEdges(tInner, 2, colorMain);
-        strokePolygonEdges((tInner+tOuter)/2, 1.5, colorShine);
-
-        // Dann Öffnungs-Sektor ausstanzen (identisch zum Kreis)
-        const Rmax = tOuter + 12*dpr;
-        const gapHalf = ring.openWidthAngle*0.5;
-        const start = ring.openCenter - gapHalf;
-        const end   = ring.openCenter + gapHalf;
-
-        ctx.globalCompositeOperation='destination-out';
-        ctx.beginPath();
-        ctx.moveTo(CX, CY);
-        ctx.arc(CX, CY, Rmax, start, end, false);
-        ctx.closePath();
-        ctx.fill();
-        ctx.globalCompositeOperation='source-over';
+        ctx.restore();
       }
-      ctx.restore();
+    } else {
+      // Linien (horizontale Balken mit Öffnung)
+      for (let i=0;i<lines.length;i++){
+        const L=lines[i]; if (L.removed) continue;
+        const hue = 200 + i*9;
+        const colorMain = `hsla(${hue}, 65%, 66%, 0.85)`;
+        const colorShine= `hsla(${hue}, 85%, 85%, 0.25)`;
+
+        const yTop = Math.round(L.y - L.halfT)+0.5, yBot=Math.round(L.y + L.halfT)+0.5;
+        const left = L.openX - L.openW/2, right = L.openX + L.openW/2;
+
+        ctx.save();
+        // Hauptbalken links
+        ctx.strokeStyle=colorMain; ctx.lineWidth = yBot - yTop;
+        ctx.beginPath(); ctx.moveTo(0, L.y); ctx.lineTo(Math.max(0,left), L.y); ctx.stroke();
+        // Hauptbalken rechts
+        ctx.beginPath(); ctx.moveTo(Math.min(W,right), L.y); ctx.lineTo(W, L.y); ctx.stroke();
+
+        // Glanzlinie
+        ctx.strokeStyle=colorShine; ctx.lineWidth = Math.max(1, (yBot-yTop)*0.25);
+        const glossY = L.y - (yBot-yTop)*0.25;
+        ctx.beginPath(); ctx.moveTo(0, glossY); ctx.lineTo(Math.max(0,left), glossY); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(Math.min(W,right), glossY); ctx.lineTo(W, glossY); ctx.stroke();
+
+        ctx.restore();
+      }
     }
 
-    // Spuren (nur im Normalmodus temporär)
+    // Ball & temporäre Spuren
     for (const b of balls){
       if (!ui.drawMode.checked && b.trail.length>1){
         ctx.save();
-        ctx.globalAlpha=0.9;
-        ctx.lineJoin='round'; ctx.lineCap='round';
+        ctx.globalAlpha=0.9; ctx.lineJoin='round'; ctx.lineCap='round';
         for (let pass=0; pass<3; pass++){
           const alpha=(0.35 - pass*0.1); if (alpha<=0) continue;
           ctx.strokeStyle=`rgba(169,184,255,${alpha})`;
@@ -845,7 +838,6 @@
         }
         ctx.restore();
       }
-      // Ball
       ctx.save();
       ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2);
       ctx.fillStyle='#fff'; ctx.fill();
@@ -855,19 +847,21 @@
 
     // Zielhilfe
     if (aiming && !launched){
-      const ax=aimX-CX, ay=aimY-CY;
+      const ax=aimX-(ui.shape.value==='circle'?CX:CX), ay=aimY-(ui.shape.value==='circle'?CY:Math.max(18*dpr,10));
       const len=Math.hypot(ax,ay);
       const maxPull=Math.min(W,H)*0.46*0.55;
       const pull=Math.min(len, maxPull);
       const dirx=ax/(len||1), diry=ay/(len||1);
-      const tipX=CX+dirx*pull, tipY=CY+diry*pull;
+      const baseX = (ui.shape.value==='circle'?CX:CX);
+      const baseY = (ui.shape.value==='circle'?CY:Math.max(18*dpr,10));
+      const tipX=baseX+dirx*pull, tipY=baseY+diry*pull;
 
       ctx.save();
       ctx.globalAlpha=0.9;
       const accent=getComputedStyle(document.documentElement).getPropertyValue('--accent');
       ctx.strokeStyle=accent;
       ctx.lineWidth=Math.max(1,2*dpr);
-      ctx.beginPath(); ctx.moveTo(CX, CY); ctx.lineTo(tipX, tipY); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(baseX, baseY); ctx.lineTo(tipX, tipY); ctx.stroke();
       ctx.beginPath();
       const side=10*dpr, nx=-diry, ny=dirx;
       ctx.moveTo(tipX,tipY);
@@ -878,15 +872,14 @@
     }
   }
 
-  // ========= Start / Menu =========
+  // ===== Start / Menu =====
   async function startGame(){
     resize();
     computeLevel();
     hud.classList.remove('hidden');
     startScreen.classList.add('hidden');
-    // Vollbild
-    const el = document.documentElement;
     try{
+      const el = document.documentElement;
       if (el.requestFullscreen) await el.requestFullscreen();
       else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
     }catch(e){}
@@ -895,18 +888,16 @@
   ui.startBtn.addEventListener('click', startGame);
 
   btnBack.addEventListener('click', async ()=>{
-    // zurück ins Menü + vollständiges Reset (nichts läuft weiter)
     hud.classList.add('hidden');
     startScreen.classList.remove('hidden');
-    resetToMenuState();
-    // Fullscreen verlassen
+    resetToMenuState(); // vollständiges Reset
     try{
       if (document.fullscreenElement && document.exitFullscreen) await document.exitFullscreen();
       else if (document.webkitFullscreenElement && document.webkitExitFullscreen) document.webkitExitFullscreen();
     }catch(e){}
   });
 
-  // ========= Init =========
+  // ===== Init =====
   resize();
   requestAnimationFrame(step);
 })();
