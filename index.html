@@ -717,38 +717,46 @@
             const core = `hsl(${hue} ${sat}% ${light}%)`;
             const edge = `hsl(${hue} ${Math.max(0,sat-10)}% ${Math.max(0,light-18)}%)`;
 
-            // Outer (unscharfer, dunklerer Rand)
-            ptx.save();
-            ptx.globalAlpha = 0.65;
-            ptx.lineCap='round'; ptx.lineJoin='round';
-            ptx.strokeStyle = edge;
-            ptx.lineWidth = Math.max(1.5, b.r*1.6);
-            ptx.shadowColor = edge;
-            ptx.shadowBlur = Math.max(2, b.r*1.2);
-            ptx.beginPath(); ptx.moveTo(b.px, b.py); ptx.lineTo(b.x, b.y); ptx.stroke();
-            ptx.restore();
-// EDGE-PASS: dünne graue Kante zur klaren Kontur
-ptx.save();
-ptx.globalAlpha = 0.9;
-ptx.lineCap = 'round';
-ptx.lineJoin = 'round';
-ptx.strokeStyle = 'rgba(120, 120, 130, 0.95)'; // neutrales Grau
-ptx.lineWidth = Math.max(1, b.r * 0.65);       // dünner als Core
-ptx.shadowColor = 'transparent';               // keine zusätzliche Weichzeichnung hier
-ptx.beginPath();
-ptx.moveTo(b.px, b.py);
-ptx.lineTo(b.x, b.y);
-ptx.stroke();
-ptx.restore();
-            // Inner (heller Kern)
-            ptx.save();
-            ptx.globalAlpha = 0.95;
-            ptx.lineCap='round'; ptx.lineJoin='round';
-            ptx.strokeStyle = core;
-            ptx.lineWidth = Math.max(1.2, b.r*0.9);
-            ptx.beginPath(); ptx.moveTo(b.px, b.py); ptx.lineTo(b.x, b.y); ptx.stroke();
-            ptx.restore();
-          }
+            // ========== 1) Outer (unscharfer, dunklerer Rand) ==========
+  ptx.save();
+  ptx.globalAlpha = 0.65;
+  ptx.lineCap='round'; ptx.lineJoin='round';
+  ptx.strokeStyle = edge;
+  ptx.lineWidth = Math.max(1.5, b.r*1.6);
+  ptx.shadowColor = edge;
+  ptx.shadowBlur = Math.min(12, Math.max(2, b.r*1.2)); // iPhone-GPU freundlich
+  ptx.beginPath();
+  ptx.moveTo(b.px, b.py);
+  ptx.lineTo(b.x, b.y);
+  ptx.stroke();
+  ptx.restore();
+
+  // ========== 2) EDGE-PASS: dünne graue Kante (Kontur) ==========
+  ptx.save();
+  ptx.globalAlpha = 0.9;
+  ptx.lineCap = 'round';
+  ptx.lineJoin = 'round';
+  ptx.strokeStyle = 'rgba(120, 120, 130, 0.95)'; // neutrales Grau
+  ptx.lineWidth = Math.max(1, b.r * 0.65);       // etwas dünner als Kern
+  ptx.shadowColor = 'transparent';               // klare Kante
+  ptx.beginPath();
+  ptx.moveTo(b.px, b.py);
+  ptx.lineTo(b.x, b.y);
+  ptx.stroke();
+  ptx.restore();
+
+  // ========== 3) Inner (heller Kern) ==========
+  ptx.save();
+  ptx.globalAlpha = 0.95;
+  ptx.lineCap='round'; ptx.lineJoin='round';
+  ptx.strokeStyle = core;
+  ptx.lineWidth = Math.max(1.2, b.r*0.9);
+  ptx.beginPath();
+  ptx.moveTo(b.px, b.py);
+  ptx.lineTo(b.x, b.y);
+  ptx.stroke();
+  ptx.restore();
+}
         }
       }
     }
