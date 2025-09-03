@@ -727,7 +727,19 @@
             ptx.shadowBlur = Math.max(2, b.r*1.2);
             ptx.beginPath(); ptx.moveTo(b.px, b.py); ptx.lineTo(b.x, b.y); ptx.stroke();
             ptx.restore();
-
+// EDGE-PASS: dünne graue Kante zur klaren Kontur
+ptx.save();
+ptx.globalAlpha = 0.9;
+ptx.lineCap = 'round';
+ptx.lineJoin = 'round';
+ptx.strokeStyle = 'rgba(120, 120, 130, 0.95)'; // neutrales Grau
+ptx.lineWidth = Math.max(1, b.r * 0.65);       // dünner als Core
+ptx.shadowColor = 'transparent';               // keine zusätzliche Weichzeichnung hier
+ptx.beginPath();
+ptx.moveTo(b.px, b.py);
+ptx.lineTo(b.x, b.y);
+ptx.stroke();
+ptx.restore();
             // Inner (heller Kern)
             ptx.save();
             ptx.globalAlpha = 0.95;
