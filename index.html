@@ -692,69 +692,91 @@
           if (!ui.drawMode.checked && b.trail.length>TRAIL_MAX) b.trail.shift();
 
           // Zeichenmodus – Farben/Palette + weiche, dunklere Ränder
-          if (ui.drawMode.checked){
-            // Bestimme Basisfarbe
-            let hue, sat=80, light=60; // HSL
-            const mode = ui.drawColorMode.value;
-            if (mode==='rainbow'){
-              b.hue = (b.hue + 30*dt) % 360;
-              hue = b.hue;
-            } else if (mode==='red'){ hue=0; }
-            else if (mode==='blue'){ hue=210; }
-            else if (mode==='green'){ hue=130; }
-            else if (mode==='magenta'){ hue=300; }
-            else if (mode==='cyan'){ hue=185; }
-            else if (mode==='yellow'){ hue=55; }
-            else if (mode==='white'){ hue=0; sat=0; light=96; }
-            else if (mode==='neon'){
-              // Neon-Palette zyklisch
-              const palette=[50, 140, 200, 290, 330];
-              b.neonPhase = (b.neonPhase + dt*0.4) % 1;
-              const idx = Math.floor(b.neonPhase * palette.length);
-              hue = palette[idx]; sat=95; light=62;
-            } else { hue=200; }
+         if (ui.drawMode.checked){
+  // === Farbe wählen (wie bisher) ===
+  let hue, sat=80, light=60;
+  const mode = ui.drawColorMode.value;
+  if (mode==='rainbow'){ b.hue=(b.hue+30*dt)%360; hue=b.hue; }
+  else if (mode==='red'){ hue=0; }
+  else if (mode==='blue'){ hue=210; }
+  else if (mode==='green'){ hue=130; }
+  else if (mode==='magenta'){ hue=300; }
+  else if (mode==='cyan'){ hue=185; }
+  else if (mode==='yellow'){ hue=55; }
+  else if (mode==='white'){ hue=0; sat=0; light=96; }
+  else if (mode==='neon'){
+    const palette=[50,140,200,290,330];
+    b.neonPhase=(b.neonPhase+dt*0.4)%1;
+    hue=palette[Math.floor(b.neonPhase*palette.length)]; sat=95; light=62;
+  } else { hue=200; }
 
-            const core = `hsl(${hue} ${sat}% ${light}%)`;
-            const edge = `hsl(${hue} ${Math.max(0,sat-10)}% ${Math.max(0,light-18)}%)`;
+  const core = `hsl(${hue} ${sat}% ${light}%)`;
+  const edge = `hsl(${hue} ${Math.max(0,sat-10)}% ${Math.max(0,light-18)}%)`;
 
-            // ========== 1) Outer (unscharfer, dunklerer Rand) ==========
+  // === Breiten & Blur dynamisch (iPhone-freundlich) ===
+  const base = Math.max(1.0, b.r);
+  const coreW   = Math.max(1.1, base*0.95);
+  const edgeW   = Math.max(1.0, base*0.65);
+  const shadowW = Math.max(1.6, base*1.55);
+  const shadowBlur = Math.min(12, Math.max(2, base*1.2));
+  const gutterW = Math.max(0.8, coreW + edgeW*0.9);   // „Graben“ zum Freistellen
+  const hiliteW = Math.max(0.8, base*0.45);
+
+  // ========== 0) GUTTER / GRABEN (macht Platz für den neuen Strich) ==========
+  // Schneidet einen schmalen dunklen Kanal in die Paint-Ebene, damit die Striche
+  // sich optisch trennen – das erzeugt die klaren Zwischenräume für den 3D-Look.
   ptx.save();
-  ptx.globalAlpha = 0.65;
+  ptx.globalCompositeOperation = 'destination-out';
+  ptx.lineCap='round'; ptx.lineJoin='round';
+  ptx.lineWidth = gutterW;
+  ptx.beginPath();
+  ptx.moveTo(b.px, b.py);
+  ptx.lineTo(b.x, b.y);
+  ptx.stroke();
+  ptx.restore();
+
+  // ========== 1) Outer Shadow (unscharfer, dunkler Rand) ==========
+  ptx.save();
+  ptx.globalCompositeOperation = 'source-over';
+  ptx.globalAlpha = 0.70;
   ptx.lineCap='round'; ptx.lineJoin='round';
   ptx.strokeStyle = edge;
-  ptx.lineWidth = Math.max(1.5, b.r*1.6);
+  ptx.lineWidth = shadowW;
   ptx.shadowColor = edge;
-  ptx.shadowBlur = Math.min(12, Math.max(2, b.r*1.2)); // iPhone-GPU freundlich
-  ptx.beginPath();
-  ptx.moveTo(b.px, b.py);
-  ptx.lineTo(b.x, b.y);
-  ptx.stroke();
+  ptx.shadowBlur = shadowBlur;
+  ptx.beginPath(); ptx.moveTo(b.px, b.py); ptx.lineTo(b.x, b.y); ptx.stroke();
   ptx.restore();
 
-  // ========== 2) EDGE-PASS: dünne graue Kante (Kontur) ==========
-  ptx.save();
-  ptx.globalAlpha = 0.9;
-  ptx.lineCap = 'round';
-  ptx.lineJoin = 'round';
-  ptx.strokeStyle = 'rgba(120, 120, 130, 0.95)'; // neutrales Grau
-  ptx.lineWidth = Math.max(1, b.r * 0.65);       // etwas dünner als Kern
-  ptx.shadowColor = 'transparent';               // klare Kante
-  ptx.beginPath();
-  ptx.moveTo(b.px, b.py);
-  ptx.lineTo(b.x, b.y);
-  ptx.stroke();
-  ptx.restore();
-
-  // ========== 3) Inner (heller Kern) ==========
+  // ========== 2) Graue Kante (klare Kontur) ==========
   ptx.save();
   ptx.globalAlpha = 0.95;
   ptx.lineCap='round'; ptx.lineJoin='round';
+  ptx.strokeStyle = 'rgba(110,112,120,0.95)'; // leicht kühles Grau
+  ptx.lineWidth = edgeW;
+  ptx.beginPath(); ptx.moveTo(b.px, b.py); ptx.lineTo(b.x, b.y); ptx.stroke();
+  ptx.restore();
+
+  // ========== 3) Heller Kern ==========
+  ptx.save();
+  ptx.globalAlpha = 0.98;
+  ptx.lineCap='round'; ptx.lineJoin='round';
   ptx.strokeStyle = core;
-  ptx.lineWidth = Math.max(1.2, b.r*0.9);
-  ptx.beginPath();
-  ptx.moveTo(b.px, b.py);
-  ptx.lineTo(b.x, b.y);
-  ptx.stroke();
+  ptx.lineWidth = coreW;
+  ptx.beginPath(); ptx.moveTo(b.px, b.py); ptx.lineTo(b.x, b.y); ptx.stroke();
+  ptx.restore();
+
+  // ========== 4) Highlight / Lichtkante (3D) ==========
+  // Sehr dünner, heller Strich oben drauf (Screen-Blending), gibt Tiefe/Glanz.
+  ptx.save();
+  ptx.globalCompositeOperation = 'lighter'; // ähnlich „Screen“
+  ptx.globalAlpha = 0.35;
+  ptx.lineCap='round'; ptx.lineJoin='round';
+  // leicht wärmere/neutralere Highlights je nach Modus
+  const hi = (mode==='white') ? 'rgba(255,255,255,0.9)'
+                              : 'rgba(255,255,245,0.9)';
+  ptx.strokeStyle = hi;
+  ptx.lineWidth = hiliteW;
+  ptx.beginPath(); ptx.moveTo(b.px, b.py); ptx.lineTo(b.x, b.y); ptx.stroke();
   ptx.restore();
 }
         }
