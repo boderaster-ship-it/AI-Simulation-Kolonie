@@ -685,12 +685,12 @@
             } else { hue=200; }
 
             const coreColor = `hsl(${hue} ${sat}% ${light}%)`;
-            const edgeColor = 'rgba(110,112,120,0.95)';
+            const edgeColor = 'rgba(0,0,0,1)';
 
             // Breiten
             const base = Math.max(1.0, b.r);
             const coreW = Math.max(1.5, base*0.95);
-            const edgeW = Math.max(1.0, base*0.55);
+            const edgeW = Math.max(1.25, base*0.55);
 
             // 1) Kante (etwas breiter, damit sie außen sichtbar bleibt)
             ptx.save();
