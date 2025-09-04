@@ -695,8 +695,7 @@
             // 1) Kante (etwas breiter, damit sie außen sichtbar bleibt)
             ptx.save();
             ptx.lineCap='round'; ptx.lineJoin='round';
-            ptx.strokeStyle=edgeColor;
-            ptx.lineWidth=coreW + edgeW*2; // Kontur rundum
+            ptx.strokeStyle=edgeColor  // Kontur rundum
             ptx.beginPath(); ptx.moveTo(b.px,b.py); ptx.lineTo(b.x,b.y); ptx.stroke();
             ptx.restore();
 
