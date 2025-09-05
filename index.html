@@ -344,9 +344,6 @@
     return { x, y, px:x, py:y, vx, vy, r:ballRadius, trail:[], ringIndex:0, hue:Math.random()*360, neonPhase:Math.random() };
   }
 
-  // Schatten-Taktung (Performance)
-  let shadowTick = 0;
-
   // ===== Layout / Resize =====
   function calibrateMM(){
     const mmDiv = document.getElementById('mmCal');
@@ -614,6 +611,28 @@
     }
   }
 
+  // ===== Helper: HSL → RGBA (Canvas-sicher) =====
+  function hslToRgbaCss(h, s, l, a){
+    h = (isFinite(h) ? h : 0) % 360; if (h < 0) h += 360;
+    s = Math.min(100, Math.max(0, s)) / 100;
+    l = Math.min(100, Math.max(0, l)) / 100;
+    const c = (1 - Math.abs(2*l - 1)) * s;
+    const x = c * (1 - Math.abs(((h/60) % 2) - 1));
+    const m = l - c/2;
+    let r=0,g=0,b=0;
+    if (0<=h && h<60){ r=c; g=x; b=0; }
+    else if (60<=h && h<120){ r=x; g=c; b=0; }
+    else if (120<=h && h<180){ r=0; g=c; b=x; }
+    else if (180<=h && h<240){ r=0; g=x; b=c; }
+    else if (240<=h && h<300){ r=x; g=0; b=c; }
+    else { r=c; g=0; b=x; }
+    const R = Math.round((r+m)*255);
+    const G = Math.round((g+m)*255);
+    const B = Math.round((b+m)*255);
+    const A = (a==null ? 1 : Math.max(0, Math.min(1, a)));
+    return `rgba(${R},${G},${B},${A})`;
+  }
+
   // ===== Loop =====
   let lastT=0;
   function step(ts){
@@ -668,7 +687,7 @@
           b.trail.push({x:b.x,y:b.y});
           if (!ui.drawMode.checked && b.trail.length>TRAIL_MAX) b.trail.shift();
 
-          // ======= ZEICHENMODUS – Kern + Rand (robuste Farbe + effizienter Schatten) =======
+          // ======= ZEICHENMODUS – Farbiger Kern + dunkler Rand (Canvas-sichere Farbe) =======
           if (ui.drawMode.checked){
             // Farbe wählen
             let hue, sat=88, light=60;
@@ -687,21 +706,16 @@
               hue=palette[Math.floor(b.neonPhase*palette.length)]; sat=96; light=62;
             } else { hue=200; }
 
-            // ---- Robust gegen NaN/undefined + Clamping + Safari-sicheres hsla(,,,) ----
-            let H = Number.isFinite(hue) ? hue : 200;
-            H = ((H % 360) + 360) % 360;
-            let S = Math.max(0, Math.min(100, Math.round(sat)));
-            let L = Math.max(0, Math.min(100, Math.round(light)));
-
-            const coreColor = `hsla(${H}, ${S}%, ${L}%, 1)`;
+            // --- FARBEN ROBUST ALS RGBA ---
+            const coreColor = hslToRgbaCss(hue, sat, light, 1);
             const edgeColor = 'rgba(50,50,50,0.9)';
 
-            // Breiten
+            // --- BREITEN ---
             const base  = Math.max(1.0, b.r);
             const coreW = Math.max(2.0, base * 1.0);
             const edgeW = coreW + Math.max(1.0, base * 0.5);
 
-            // 1) Rand (dunkel, etwas breiter)
+            // 1) Rand
             ptx.save();
             ptx.lineCap = 'round';
             ptx.lineJoin = 'round';
@@ -713,22 +727,18 @@
             ptx.stroke();
             ptx.restore();
 
-            // 2) Kern (Farbe) + gedrosselter Schatten (Performance)
-            const doShadow = ((shadowTick++ & 1) === 0); // nur jeden 2. Stroke
+            // 2) Kern (mit leichtem Schatten)
             ptx.save();
             ptx.lineCap = 'round';
             ptx.lineJoin = 'round';
             ptx.strokeStyle = coreColor;
             ptx.lineWidth   = coreW;
 
-            if (doShadow){
-              ptx.shadowColor   = 'rgba(0,0,0,0.28)';
-              ptx.shadowBlur    = Math.min(8, coreW * 0.45);
-              ptx.shadowOffsetX = 0.8;
-              ptx.shadowOffsetY = 0.8;
-            } else {
-              ptx.shadowBlur = 0;
-            }
+            // schlanker Schatten für Performance
+            ptx.shadowColor   = 'rgba(0,0,0,0.25)';
+            ptx.shadowBlur    = Math.min(8*dpr, coreW*0.5);
+            ptx.shadowOffsetX = 0.75;
+            ptx.shadowOffsetY = 0.75;
 
             ptx.beginPath();
             ptx.moveTo(b.px,b.py);
