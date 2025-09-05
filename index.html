@@ -285,13 +285,20 @@
   let audioCtx=null, masterGain=null, bounceCount=0;
   const scaleSemitones=[0,3,5,7,10,12,15,17];
 
-  // ----- NEU: Bekannte Melodien (Semitone-Offsets relativ zu A3 = 220 Hz) -----
+  // ----- Bekannte Melodien (Semitone-Offsets relativ zu A3 = 220 Hz) -----
+  // „Alle meine Entchen“ – erste zwei Zeilen mit Längen durch Wiederholungen
+  // C D E F | G G | A A | G G | F F | E |  C C | D D | E E | F | G G | F F | E E | D | C
   const melodyEntchen = [
-    3,5,7,8,10,10,  12,12,10,10,8,8,7,7,  5,5,3,3
+    3,5,7,8, 10,10, 12,12, 10,10, 8,8, 7,
+    3,3, 5,5, 7,7, 8, 10,10, 8,8, 7,7, 5, 3
   ];
-  // Vereinfachtes James-Bond-Kernmotiv (ikonisches Pattern)
+
+  // James-Bond-Hauptmotiv (chromatisches E–F–E–Eb–E mit charakteristischem Sprung auf B)
+  // E4, F4, E4, Eb4, E4, B3,  E4, F4, E4, Eb4, E4, Bb3, B3,  E4 (Verstärkung durch Wiederholungen)
   const melodyBond = [
-    7,8,7,6,7,  3,2,2,   7,8,7,6,7,  10,9,9
+    7,8,7,6,7, 2,
+    7,8,7,6,7, 1,2,
+    7,7
   ];
   const melodyState = { idx: 0 };
   function isMelodyMode(){
