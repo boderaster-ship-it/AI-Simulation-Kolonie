@@ -1,15 +1,21 @@
 let audioCtx=null, masterGain=null, bounceCount=0;
 const scaleSemitones=[0,3,5,7,10,12,15,17];
+// Melodien mit Tonhöhe (semi) und Dauer (dur). semi=null markiert eine Pause.
 const melodyEntchen=[
-  3,5,7,8,10,10,
-  12,12,10,10,8,8,7,7,
-  5,5,3,3
+  {semi:3,  dur:0.28}, {semi:5,  dur:0.28}, {semi:7,  dur:0.28},
+  {semi:8,  dur:0.28}, {semi:10, dur:0.28}, {semi:10, dur:0.56},
+  {semi:null,dur:0.3},
+  {semi:12, dur:0.28}, {semi:12, dur:0.28}, {semi:10, dur:0.28}, {semi:10, dur:0.28},
+  {semi:8,  dur:0.28}, {semi:8,  dur:0.28}, {semi:7,  dur:0.56},
+  {semi:null,dur:0.3},
+  {semi:5,  dur:0.28}, {semi:5,  dur:0.28}, {semi:3,  dur:0.28}, {semi:3, dur:0.56}
 ];
 const melodyBond=[
-  7,8,7,6,7,
-  3,2,2,
-  7,8,7,6,7,
-  10,9,9
+  {semi:7, dur:0.3}, {semi:8, dur:0.3}, {semi:7, dur:0.3}, {semi:6, dur:0.3}, {semi:7, dur:0.6},
+  {semi:3, dur:0.3}, {semi:2, dur:0.3}, {semi:2, dur:0.6},
+  {semi:null,dur:0.3},
+  {semi:7, dur:0.3}, {semi:8, dur:0.3}, {semi:7, dur:0.3}, {semi:6, dur:0.3}, {semi:7, dur:0.6},
+  {semi:10,dur:0.3}, {semi:9, dur:0.3}, {semi:9, dur:0.6}
 ];
 const melodyState={idx:0};
 const seqState={idx:0,dir:1};
@@ -53,21 +59,27 @@ export function playBounce(){
   const elBounces=globalThis.state.elBounces;
   const t=audioCtx.currentTime;
   const shift=parseInt(ui.pitchShift.value,10)||0;
-  const dur=Math.max(0.22, Math.min(5, parseFloat(ui.toneDur.value)||0.22));
+  const baseDur=Math.max(0.22, Math.min(5, parseFloat(ui.toneDur.value)||0.22));
   const type=ui.toneType.value;
-  let freq;
+  let freq, dur=baseDur, rest=false;
   if (isMelodyMode()){
     const arr=currentMelodyArray();
-    const midx=melodyState.idx % arr.length;
-    const semiAbs=arr[midx]+shift;
-    freq=220*Math.pow(2, semiAbs/12);
+    const note=arr[melodyState.idx % arr.length];
     melodyState.idx=(melodyState.idx+1)%arr.length;
+    dur = note.dur || baseDur;
+    if(note.semi==null){
+      rest=true;
+    } else {
+      const semiAbs=note.semi+shift;
+      freq=220*Math.pow(2, semiAbs/12);
+    }
   } else {
     const idx=nextScaleIndex();
     const octave=(Math.floor(bounceCount/scaleSemitones.length))%2;
     const semi=scaleSemitones[idx]+12*octave+shift;
     freq=220*Math.pow(2, semi/12);
   }
+  if(rest){ bounceCount++; elBounces.textContent=bounceCount; return; }
   if (type==='noise'){
     const len=Math.max(0.05, Math.min(5, dur)), sr=audioCtx.sampleRate;
     const buffer=audioCtx.createBuffer(1, Math.floor(sr*len), sr);
