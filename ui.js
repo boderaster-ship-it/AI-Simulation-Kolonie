@@ -58,7 +58,7 @@ export function getPos(e){
 }
 
 export function pointerDown(e){
-  const s=globalThis.state; initAudio();
+  const s=globalThis.state; if (ui.shape.value!=='pendulum') initAudio();
   const p=getPos(e);
   if (!s.launched){ s.aiming=true; s.aimX=p.x; s.aimY=p.y; }
   else {
@@ -78,7 +78,7 @@ export function pointerUp(){
     const dirx=ax/len, diry=ay/len;
     const v= s.MAX_SHOT * (pull/maxPull*0.75 + 0.25);
     for (const b of s.balls){ b.vx=dirx*v; b.vy=diry*v; }
-    s.launched=true; s.aiming=false; initAudio();
+    s.launched=true; s.aiming=false; if (ui.shape.value!=='pendulum') initAudio();
   }
 }
 
@@ -88,14 +88,24 @@ export function resetRunState(shapeMode){
   s.ptx.lineCap='round'; s.ptx.lineJoin='round';
   s.balls.length=0;
   let spawnX = s.CX, spawnY = s.CY + 20*s.dpr;
-  if ((shapeMode||ui.shape.value)==='lines'){
+  const mode = (shapeMode||ui.shape.value);
+  if (mode==='lines'){
     spawnX = s.CX;
     spawnY = Math.max(18*s.dpr, 10);
+  } else if (mode==='pendulum'){
+    const p = s.pendulum;
+    spawnX = s.CX + Math.sin(p.angle)*p.length;
+    spawnY = s.CY + Math.cos(p.angle)*p.length;
   }
   const b = makeBall(spawnX, spawnY, 0, 0);
   b.trail.push({x:b.x,y:b.y});
   s.balls.push(b);
-  s.aiming=true; s.launched=false; s.finished=false; s.elMsg.style.display='none';
+  if (mode==='pendulum'){
+    s.aiming=false; s.launched=true;
+  } else {
+    s.aiming=true; s.launched=false;
+  }
+  s.finished=false; s.elMsg.style.display='none';
 }
 
 export function resetToMenuState(){
@@ -118,7 +128,7 @@ export async function startGame(){
     if (el.requestFullscreen) await el.requestFullscreen();
     else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
   }catch(e){}
-  initAudio();
+  if (ui.shape.value!=='pendulum') initAudio();
 }
 
 export function setupUI(){
