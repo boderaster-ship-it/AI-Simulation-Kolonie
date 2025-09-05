@@ -85,9 +85,6 @@ function computeLevel(){
     s.ballRadius = Math.max(5*dpr, thickness * 0.23);
     resetRunState(shape);
   } else if (shape==='pendulum'){
-    s.pendulum.length = Math.min(s.W,s.H)*0.3;
-    s.pendulum.angle = Math.PI/3;
-    s.pendulum.vel = 0;
     ui.drawMode.checked = true;
     s.ballRadius = Math.max(5*dpr, 6*dpr);
     resetRunState(shape);
@@ -153,12 +150,24 @@ function step(ts){
     const b = s.balls[0];
     if (b){
       b.px = b.x; b.py = b.y;
-      const p = s.pendulum;
-      p.vel += -p.gravity * Math.sin(p.angle) * dtFull;
-      p.vel *= (1 - p.damping*dtFull);
-      p.angle += p.vel * dtFull;
-      b.x = s.CX + Math.sin(p.angle) * p.length;
-      b.y = s.CY + Math.cos(p.angle) * p.length;
+      if (s.launched){
+        const dx = s.CX - b.x, dy = s.CY - b.y;
+        const dist = Math.hypot(dx,dy) || 1;
+        const ax = dx/dist * s.G;
+        const ay = dy/dist * s.G;
+        b.vx += ax * dtFull;
+        b.vy += ay * dtFull;
+        const damp = s.pendulum.damping;
+        b.vx *= (1 - damp*dtFull);
+        b.vy *= (1 - damp*dtFull);
+        b.x += b.vx*dtFull;
+        b.y += b.vy*dtFull;
+        const margin = b.r + 4*dpr;
+        if (b.x < margin){ b.x = margin; b.vx = Math.abs(b.vx); playBounce(); }
+        if (b.x > s.W - margin){ b.x = s.W - margin; b.vx = -Math.abs(b.vx); playBounce(); }
+        if (b.y < margin){ b.y = margin; b.vy = Math.abs(b.vy); playBounce(); }
+        if (b.y > s.H - margin){ b.y = s.H - margin; b.vy = -Math.abs(b.vy); playBounce(); }
+      }
       b.trail.push({x:b.x,y:b.y});
       if (ui.drawMode.checked){
         let hue, sat=88, light=60;
