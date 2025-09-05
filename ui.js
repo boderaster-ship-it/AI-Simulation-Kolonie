@@ -14,6 +14,8 @@ export const ui = {
   gravityVal: document.getElementById('gravityVal'),
   trailLen: document.getElementById('trailLen'),
   trailLenVal: document.getElementById('trailLenVal'),
+  ballSlow: document.getElementById('ballSlow'),
+  ballSlowVal: document.getElementById('ballSlowVal'),
   multi: document.getElementById('multi'),
   drawMode: document.getElementById('drawMode'),
   pendulumLen: document.getElementById('pendulumLen'),
@@ -43,6 +45,11 @@ export function syncLabels(){
   if (ui.shotSpeedVal && ui.shotSpeed){ ui.shotSpeedVal.textContent = ui.shotSpeed.value; }
   if (ui.gravityVal && ui.gravity){ ui.gravityVal.textContent = ui.gravity.value; }
   if (ui.trailLenVal && ui.trailLen){ ui.trailLenVal.textContent = ui.trailLen.value; }
+  if (ui.ballSlowVal && ui.ballSlow){ ui.ballSlowVal.textContent = ui.ballSlow.value + '%'; }
+  if (ui.ballSlow && globalThis.state){
+    const pct = parseFloat(ui.ballSlow.value);
+    globalThis.state.pendulum.damping = pct>0 ? -Math.log(1 - pct/100)/5 : 0;
+  }
   if (ui.pendulumLenVal && ui.pendulumLen){ ui.pendulumLenVal.textContent = ui.pendulumLen.value; }
   if (ui.pendulumLen && globalThis.state){ globalThis.state.pendulum.length = +ui.pendulumLen.value; }
   if (ui.pitchShiftVal && ui.pitchShift){ ui.pitchShiftVal.textContent = ui.pitchShift.value; }
@@ -131,7 +138,7 @@ export async function startGame(){
 }
 
 export function setupUI(){
-  [ui.numRings, ui.openWidth, ui.shotSpeed, ui.gravity, ui.trailLen, ui.pendulumLen, ui.pitchShift, ui.toneDur, ui.shape, ui.drawColorMode]
+  [ui.numRings, ui.openWidth, ui.shotSpeed, ui.gravity, ui.trailLen, ui.ballSlow, ui.pendulumLen, ui.pitchShift, ui.toneDur, ui.shape, ui.drawColorMode]
     .filter(Boolean)
     .forEach(el=>{
       el.addEventListener('input', syncLabels);
