@@ -28,7 +28,7 @@ const state = {
   balls:[],
   bounceCount:0,
   audioCtx:null, masterGain:null,
-  pendulum:{angle:Math.PI/4, vel:0, length:120, damping:0.15, gravity:2.5}
+    pendulum:{angle:Math.PI/4, vel:0, length:120, damping:0, gravity:2.5}
 };
 
 globalThis.state = state;
