@@ -200,6 +200,8 @@ function step(ts){
   requestAnimationFrame(step);
 }
 
-setupUI();
-resize();
-requestAnimationFrame(step);
+window.addEventListener('DOMContentLoaded', () => {
+  setupUI();
+  resize();
+  requestAnimationFrame(step);
+});
