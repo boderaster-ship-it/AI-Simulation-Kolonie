@@ -684,28 +684,39 @@
               hue=palette[Math.floor(b.neonPhase*palette.length)]; sat=96; light=62;
             } else { hue=200; }
 
+            
+
             const coreColor = `hsl(${hue} ${sat}% ${light}%)`;
-            const edgeColor = 'rgba(100,0,0,0.5)';
+const edgeColor = 'rgba(100,0,0,0.5)'; // ggf. grau: 'rgba(128,128,128,1)'
 
-            // Breiten
-            const base = Math.max(1.0, b.r);
-            const coreW = Math.max(1.5, base*0.95);
-            const edgeW = Math.max(1.25, base*0.55);
+// Breiten (Kante > Kern)
+const base  = Math.max(1.0, b.r);
+const coreW = Math.max(1.5, base * 0.90);
+const edgeW = coreW + Math.max(0.75, base * 0.35); // garantiert größer als coreW
 
-            // 1) Kante (etwas breiter, damit sie außen sichtbar bleibt)
-            ptx.save();
-            ptx.lineCap='round'; ptx.lineJoin='round';
-            ptx.strokeStyle=edgeColor  // Kontur rundum
-            ptx.beginPath(); ptx.moveTo(b.px,b.py); ptx.lineTo(b.x,b.y); ptx.stroke();
-            ptx.restore();
+// 1) Kante (größer, liegt unten)
+ptx.save();
+ptx.lineCap = 'round';
+ptx.lineJoin = 'round';
+ptx.strokeStyle = edgeColor;
+ptx.lineWidth = edgeW;               // <- fehlte
+ptx.beginPath();
+ptx.moveTo(b.px, b.py);
+ptx.lineTo(b.x, b.y);
+ptx.stroke();
+ptx.restore();
 
-            // 2) Kern (scharf, einfarbig)
-            ptx.save();
-            ptx.lineCap='round'; ptx.lineJoin='round';
-            ptx.strokeStyle=coreColor;
-            ptx.lineWidth=coreW;
-            ptx.beginPath(); ptx.moveTo(b.px,b.py); ptx.lineTo(b.x,b.y); ptx.stroke();
-            ptx.restore();
+// 2) Kern (scharf, einfarbig)
+ptx.save();
+ptx.lineCap = 'round';
+ptx.lineJoin = 'round';
+ptx.strokeStyle = coreColor;
+ptx.lineWidth = coreW;
+ptx.beginPath();
+ptx.moveTo(b.px, b.py);
+ptx.lineTo(b.x, b.y);
+ptx.stroke();
+ptx.restore();
           }
           // ======= /ZEICHENMODUS =======
         }
