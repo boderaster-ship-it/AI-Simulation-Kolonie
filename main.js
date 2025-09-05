@@ -87,6 +87,7 @@ function computeLevel(){
   } else if (shape==='pendulum'){
     ui.drawMode.checked = true;
     s.ballRadius = Math.max(5*dpr, 6*dpr);
+    s.pendulum.length = +ui.pendulumLen.value;
     resetRunState(shape);
     try{ if (s.audioCtx && s.audioCtx.state!=='closed') s.audioCtx.suspend(); }catch(e){}
     s.ringsLeft = 0;

@@ -16,6 +16,8 @@ export const ui = {
   trailLenVal: document.getElementById('trailLenVal'),
   multi: document.getElementById('multi'),
   drawMode: document.getElementById('drawMode'),
+  pendulumLen: document.getElementById('pendulumLen'),
+  pendulumLenVal: document.getElementById('pendulumLenVal'),
   drawColorMode: document.getElementById('drawColorMode'),
   pitchShift: document.getElementById('pitchShift'),
   pitchShiftVal: document.getElementById('pitchShiftVal'),
@@ -41,6 +43,8 @@ export function syncLabels(){
   if (ui.shotSpeedVal && ui.shotSpeed){ ui.shotSpeedVal.textContent = ui.shotSpeed.value; }
   if (ui.gravityVal && ui.gravity){ ui.gravityVal.textContent = ui.gravity.value; }
   if (ui.trailLenVal && ui.trailLen){ ui.trailLenVal.textContent = ui.trailLen.value; }
+  if (ui.pendulumLenVal && ui.pendulumLen){ ui.pendulumLenVal.textContent = ui.pendulumLen.value; }
+  if (ui.pendulumLen && globalThis.state){ globalThis.state.pendulum.length = +ui.pendulumLen.value; }
   if (ui.pitchShiftVal && ui.pitchShift){ ui.pitchShiftVal.textContent = ui.pitchShift.value; }
   if (ui.toneDurVal && ui.toneDur){
     ui.toneDurVal.textContent = parseFloat(ui.toneDur.value).toFixed(2) + " s";
@@ -127,7 +131,7 @@ export async function startGame(){
 }
 
 export function setupUI(){
-  [ui.numRings, ui.openWidth, ui.shotSpeed, ui.gravity, ui.trailLen, ui.pitchShift, ui.toneDur, ui.shape, ui.drawColorMode]
+  [ui.numRings, ui.openWidth, ui.shotSpeed, ui.gravity, ui.trailLen, ui.pendulumLen, ui.pitchShift, ui.toneDur, ui.shape, ui.drawColorMode]
     .filter(Boolean)
     .forEach(el=>{
       el.addEventListener('input', syncLabels);
