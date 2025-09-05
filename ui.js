@@ -28,17 +28,23 @@ export const ui = {
 };
 
 export function updateOpenUnitLabel(){
-  const isLines = ui.shape.value === 'lines';
-  ui.openWidthLbl.firstChild.textContent = isLines ? "Öffnung (mm): " : "Öffnung (°): ";
-  ui.openWidthVal.textContent = ui.openWidth.value + (isLines ? " mm" : "°");
+  const isLines = ui.shape?.value === 'lines';
+  if (ui.openWidthLbl?.firstChild){
+    ui.openWidthLbl.firstChild.textContent = isLines ? "Öffnung (mm): " : "Öffnung (°): ";
+  }
+  if (ui.openWidthVal && ui.openWidth){
+    ui.openWidthVal.textContent = ui.openWidth.value + (isLines ? " mm" : "°");
+  }
 }
 export function syncLabels(){
-  ui.numRingsVal.textContent = ui.numRings.value;
-  ui.shotSpeedVal.textContent = ui.shotSpeed.value;
-  ui.gravityVal.textContent = ui.gravity.value;
-  ui.trailLenVal.textContent = ui.trailLen.value;
-  ui.pitchShiftVal.textContent = ui.pitchShift.value;
-  ui.toneDurVal.textContent = parseFloat(ui.toneDur.value).toFixed(2) + " s";
+  if (ui.numRingsVal && ui.numRings){ ui.numRingsVal.textContent = ui.numRings.value; }
+  if (ui.shotSpeedVal && ui.shotSpeed){ ui.shotSpeedVal.textContent = ui.shotSpeed.value; }
+  if (ui.gravityVal && ui.gravity){ ui.gravityVal.textContent = ui.gravity.value; }
+  if (ui.trailLenVal && ui.trailLen){ ui.trailLenVal.textContent = ui.trailLen.value; }
+  if (ui.pitchShiftVal && ui.pitchShift){ ui.pitchShiftVal.textContent = ui.pitchShift.value; }
+  if (ui.toneDurVal && ui.toneDur){
+    ui.toneDurVal.textContent = parseFloat(ui.toneDur.value).toFixed(2) + " s";
+  }
   updateOpenUnitLabel();
 }
 
@@ -130,9 +136,9 @@ export function setupUI(){
   s.main.addEventListener('touchstart', (e)=>{ pointerDown(e); }, {passive:true});
   s.main.addEventListener('touchmove',  (e)=>{ pointerMove(e); },  {passive:true});
   s.main.addEventListener('touchend',   (e)=>{ pointerUp(); },     {passive:true});
-  ui.startBtn.addEventListener('click', startGame);
-  s.btnReset.addEventListener('click', ()=>{ globalThis.computeLevel(); });
-  s.btnBack.addEventListener('click', async ()=>{
+  ui.startBtn?.addEventListener('click', startGame);
+  s.btnReset?.addEventListener('click', ()=>{ globalThis.computeLevel(); });
+  s.btnBack?.addEventListener('click', async ()=>{
     s.hud.classList.add('hidden');
     s.startScreen.classList.remove('hidden');
     resetToMenuState();
