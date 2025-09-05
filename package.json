@@ -1,0 +1,9 @@
+{
+  "name": "ai-simulation-kolonie",
+  "version": "1.0.0",
+  "description": "AI Simulation Kolonie project",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"No tests specified\" && exit 0"
+  }
+}
