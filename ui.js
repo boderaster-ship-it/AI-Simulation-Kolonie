@@ -117,7 +117,11 @@ export async function startGame(){
 
 export function setupUI(){
   [ui.numRings, ui.openWidth, ui.shotSpeed, ui.gravity, ui.trailLen, ui.pitchShift, ui.toneDur, ui.shape, ui.drawColorMode]
-    .forEach(el=>{ el.addEventListener('input', syncLabels); el.addEventListener('change', syncLabels); });
+    .filter(Boolean)
+    .forEach(el=>{
+      el.addEventListener('input', syncLabels);
+      el.addEventListener('change', syncLabels);
+    });
   syncLabels();
   const s=globalThis.state;
   s.main.addEventListener('mousedown', pointerDown);
