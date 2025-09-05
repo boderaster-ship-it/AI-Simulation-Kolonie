@@ -12,7 +12,10 @@
   html, body { height:100%; margin:0; background:var(--bg); color:var(--fg); font-family:system-ui, -apple-system, Segoe UI, Roboto, sans-serif;}
   #wrap { position:relative; width:100%; height:100%; overflow:hidden; }
 
-  canvas { position:absolute; inset:0; width:100%; height:100%; touch-action:none; }
+  /* HARTE Canvas-Resets gegen graue Darstellung durch unerwünschte Filter/Blends */
+  canvas { position:absolute; inset:0; width:100%; height:100%; touch-action:none;
+           filter:none !important; mix-blend-mode:normal !important; }
+
   #c { z-index: 1; }
   #paintCanvas { z-index: 2; pointer-events:none; }
 
@@ -466,7 +469,7 @@
     if (e.touches && e.touches.length){
       return { x:(e.touches[0].clientX-rect.left)*dpr, y:(e.touches[0].clientY-rect.top)*dpr };
     }
-    return { x:(e.clientX-rect.left)*dpr, y:(e.clientY-rect.top)*dpr };
+    return { x:(e.clientX-rect.left)*dpr, y:(e.clientY-rect-top)*dpr };
   }
   function pointerDown(e){
     initAudio();
@@ -575,7 +578,7 @@
 
     const L = lines[idx];
     const yTop = L.y - L.halfT;
-    const yBot = L.y + L.halfT;
+    the yBot = L.y + L.halfT;
 
     const left = L.openX - L.openW/2;
     const right= L.openX + L.openW/2;
@@ -684,47 +687,68 @@
               hue=palette[Math.floor(b.neonPhase*palette.length)]; sat=96; light=62;
             } else { hue=200; }
 
-            
+            // --- HSL -> RGB (maximale Kompatibilität) ---
+            function hslToRgbString(h,s,l){
+              s/=100; l/=100;
+              const k=n=> (n + h/30) % 12;
+              const a=s*Math.min(l,1-l);
+              const f=n=> l - a*Math.max(-1, Math.min(k(n)-3, Math.min(9-k(n), 1)));
+              const r = Math.round(255*f(0));
+              const g = Math.round(255*f(8));
+              const b_ = Math.round(255*f(4));
+              return `rgb(${r},${g},${b_})`;
+            }
+            const coreColor = hslToRgbString(hue, sat, light); // -> z.B. "rgb(255,0,0)"
+            const edgeColor = 'rgba(50,50,50,0.9)';
 
-            // === Farben ===
- const coreColor = `hsla(${hue}, ${sat}%, ${light}%, 1)`;  // einstellbarer Kern
-const edgeColor = 'rgba(50,50,50,0.9)';              // dunkler Rand
+            // === Breiten ===
+            const base  = Math.max(1.0, b.r);
+            const coreW = Math.max(2.0, base * 1.0);             // Kern: kräftig
+            const edgeW = coreW + Math.max(1.0, base * 0.5);     // Rand: immer größer
 
-// === Breiten ===
-const base  = Math.max(1.0, b.r);
-const coreW = Math.max(2.0, base * 1.0);             // Kern: kräftig
-const edgeW = coreW + Math.max(1.0, base * 0.5);     // Rand: immer größer
+            // HARTE Resets für ptx, damit kein grauer Erbe-Zustand aktiv ist
+            const resetPTX = () => {
+              ptx.globalCompositeOperation = 'source-over';
+              ptx.globalAlpha = 1;
+              ptx.filter = 'none';
+              ptx.shadowColor = 'transparent';
+              ptx.shadowBlur = 0;
+              ptx.shadowOffsetX = 0;
+              ptx.shadowOffsetY = 0;
+            };
 
-// === 1) Rand (dunkel, etwas breiter) ===
-ptx.save();
-ptx.lineCap = 'round';
-ptx.lineJoin = 'round';
-ptx.strokeStyle = edgeColor;
-ptx.lineWidth   = edgeW;
-ptx.beginPath();
-ptx.moveTo(b.px,b.py);
-ptx.lineTo(b.x,b.y);
-ptx.stroke();
-ptx.restore();
+            // === 1) Rand (dunkel, etwas breiter) ===
+            ptx.save();
+            resetPTX();
+            ptx.lineCap = 'round';
+            ptx.lineJoin = 'round';
+            ptx.strokeStyle = edgeColor;
+            ptx.lineWidth   = edgeW;
+            ptx.beginPath();
+            ptx.moveTo(b.px,b.py);
+            ptx.lineTo(b.x,b.y);
+            ptx.stroke();
+            ptx.restore();
 
-// === 2) Kern (deine HSL-Farbe, klar sichtbar) ===
-ptx.save();
-ptx.lineCap = 'round';
-ptx.lineJoin = 'round';
-ptx.strokeStyle = coreColor;
-ptx.lineWidth   = coreW;
+            // === 2) Kern (deine Farbe, klar sichtbar) ===
+            ptx.save();
+            resetPTX();
+            ptx.lineCap = 'round';
+            ptx.lineJoin = 'round';
+            ptx.strokeStyle = coreColor;
+            ptx.lineWidth   = coreW;
 
-// leichte Schattierung für Tiefe
-ptx.shadowColor   = 'rgba(0,0,0,0.35)';   // subtiler dunkler Schatten
-ptx.shadowBlur    = coreW * 0.6;
-ptx.shadowOffsetX = 1;
-ptx.shadowOffsetY = 1;
+            // leichte Schattierung für Tiefe
+            ptx.shadowColor   = 'rgba(0,0,0,0.35)';
+            ptx.shadowBlur    = coreW * 0.6;
+            ptx.shadowOffsetX = 1;
+            ptx.shadowOffsetY = 1;
 
-ptx.beginPath();
-ptx.moveTo(b.px,b.py);
-ptx.lineTo(b.x,b.y);
-ptx.stroke();
-ptx.restore();
+            ptx.beginPath();
+            ptx.moveTo(b.px,b.py);
+            ptx.lineTo(b.x,b.y);
+            ptx.stroke();
+            ptx.restore();
           }
           // ======= /ZEICHENMODUS =======
         }
