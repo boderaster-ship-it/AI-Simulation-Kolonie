@@ -686,53 +686,44 @@
 
             
 
-            // Farben (kräftiger Kern, neutral-dunkler Rand)
-const coreColor = `hsl(${hue} ${sat}% ${Math.min(85, light + 6)}%)`;
-const edgeColor = 'rgba(60,60,60,0.95)';    // dunkles Grau, klarer Rand
+            // === Farben ===
+const coreColor = `hsl(${hue} ${sat}% ${light}%)`;   // einstellbarer Kern
+const edgeColor = 'rgba(50,50,50,0.9)';              // dunkler Rand
 
-// Breiten (Kern deutlich, Rand sichtbar größer)
+// === Breiten ===
 const base  = Math.max(1.0, b.r);
-const coreW = Math.max(2.0, base * 1.00);   // starker Kern
-const edgeW = coreW + Math.max(1.5, base * 0.60); // Rand > Kern
+const coreW = Math.max(2.0, base * 1.0);             // Kern: kräftig
+const edgeW = coreW + Math.max(1.0, base * 0.5);     // Rand: immer größer
 
-// Gerätekontext für Shadow
-const dpr    = (window.devicePixelRatio || 1);
-const shOff  = 1.0 * dpr;                   // Drop-Shadow Richtung unten/rechts
-const shBlur = Math.max(1.0, coreW * 0.9);  // weicher, aber markanter Schatten
-
-// === A) Ambient-Occlusion Unterlage (macht Überlagerungen „tiefer“) ===
+// === 1) Rand (dunkel, etwas breiter) ===
 ptx.save();
-ptx.lineCap  = 'round';
-ptx.lineJoin = 'round';
-ptx.globalCompositeOperation = 'multiply';   // nur abdunkeln
-ptx.strokeStyle = 'rgba(0,0,0,0.18)';
-ptx.lineWidth   = edgeW + coreW * 0.5;       // etwas breiter als alles
-ptx.beginPath(); ptx.moveTo(b.px,b.py); ptx.lineTo(b.x,b.y); ptx.stroke();
-ptx.restore();
-
-// === B) Kante (Rand) ===
-ptx.save();
-ptx.lineCap  = 'round';
+ptx.lineCap = 'round';
 ptx.lineJoin = 'round';
 ptx.strokeStyle = edgeColor;
 ptx.lineWidth   = edgeW;
-ptx.beginPath(); ptx.moveTo(b.px,b.py); ptx.lineTo(b.x,b.y); ptx.stroke();
+ptx.beginPath();
+ptx.moveTo(b.px,b.py);
+ptx.lineTo(b.x,b.y);
+ptx.stroke();
 ptx.restore();
 
-// === C) Kern (heller) mit Drop-Shadow für Tiefe ===
+// === 2) Kern (deine HSL-Farbe, klar sichtbar) ===
 ptx.save();
-ptx.lineCap  = 'round';
+ptx.lineCap = 'round';
 ptx.lineJoin = 'round';
-
-// Schatten nur für den Kern aktivieren
-ptx.shadowColor   = 'rgba(0,0,0,0.45)';
-ptx.shadowBlur    = shBlur;
-ptx.shadowOffsetX = shOff;
-ptx.shadowOffsetY = shOff;
-
 ptx.strokeStyle = coreColor;
 ptx.lineWidth   = coreW;
-ptx.beginPath(); ptx.moveTo(b.px,b.py); ptx.lineTo(b.x,b.y); ptx.stroke();
+
+// leichte Schattierung für Tiefe
+ptx.shadowColor   = 'rgba(0,0,0,0.35)';   // subtiler dunkler Schatten
+ptx.shadowBlur    = coreW * 0.6;
+ptx.shadowOffsetX = 1;
+ptx.shadowOffsetY = 1;
+
+ptx.beginPath();
+ptx.moveTo(b.px,b.py);
+ptx.lineTo(b.x,b.y);
+ptx.stroke();
 ptx.restore();
           }
           // ======= /ZEICHENMODUS =======
