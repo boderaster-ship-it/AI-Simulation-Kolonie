@@ -344,6 +344,9 @@
     return { x, y, px:x, py:y, vx, vy, r:ballRadius, trail:[], ringIndex:0, hue:Math.random()*360, neonPhase:Math.random() };
   }
 
+  // Schatten-Taktung (Performance)
+  let shadowTick = 0;
+
   // ===== Layout / Resize =====
   function calibrateMM(){
     const mmDiv = document.getElementById('mmCal');
@@ -665,7 +668,7 @@
           b.trail.push({x:b.x,y:b.y});
           if (!ui.drawMode.checked && b.trail.length>TRAIL_MAX) b.trail.shift();
 
-          // ======= ZEICHENMODUS – Standard-Linie (Kern + graue Kontur) =======
+          // ======= ZEICHENMODUS – Kern + Rand (robuste Farbe + effizienter Schatten) =======
           if (ui.drawMode.checked){
             // Farbe wählen
             let hue, sat=88, light=60;
@@ -684,16 +687,21 @@
               hue=palette[Math.floor(b.neonPhase*palette.length)]; sat=96; light=62;
             } else { hue=200; }
 
-            // === Farben ===
-            const coreColor = `hsla(${hue}, ${sat}%, ${light}%, 1)`;  // einstellbarer Kern
-            const edgeColor = 'rgba(50,50,50,0.9)';              // dunkler Rand
+            // ---- Robust gegen NaN/undefined + Clamping + Safari-sicheres hsla(,,,) ----
+            let H = Number.isFinite(hue) ? hue : 200;
+            H = ((H % 360) + 360) % 360;
+            let S = Math.max(0, Math.min(100, Math.round(sat)));
+            let L = Math.max(0, Math.min(100, Math.round(light)));
 
-            // === Breiten ===
+            const coreColor = `hsla(${H}, ${S}%, ${L}%, 1)`;
+            const edgeColor = 'rgba(50,50,50,0.9)';
+
+            // Breiten
             const base  = Math.max(1.0, b.r);
-            const coreW = Math.max(2.0, base * 1.0);             // Kern: kräftig
-            const edgeW = coreW + Math.max(1.0, base * 0.5);     // Rand: immer größer
+            const coreW = Math.max(2.0, base * 1.0);
+            const edgeW = coreW + Math.max(1.0, base * 0.5);
 
-            // === 1) Rand (dunkel, etwas breiter) ===
+            // 1) Rand (dunkel, etwas breiter)
             ptx.save();
             ptx.lineCap = 'round';
             ptx.lineJoin = 'round';
@@ -705,18 +713,22 @@
             ptx.stroke();
             ptx.restore();
 
-            // === 2) Kern (deine HSL-Farbe, klar sichtbar) ===
+            // 2) Kern (Farbe) + gedrosselter Schatten (Performance)
+            const doShadow = ((shadowTick++ & 1) === 0); // nur jeden 2. Stroke
             ptx.save();
             ptx.lineCap = 'round';
             ptx.lineJoin = 'round';
             ptx.strokeStyle = coreColor;
             ptx.lineWidth   = coreW;
 
-            // leichte Schattierung für Tiefe
-            ptx.shadowColor   = 'rgba(0,0,0,0.35)';   // subtiler dunkler Schatten
-            ptx.shadowBlur    = coreW * 0.6;
-            ptx.shadowOffsetX = 1;
-            ptx.shadowOffsetY = 1;
+            if (doShadow){
+              ptx.shadowColor   = 'rgba(0,0,0,0.28)';
+              ptx.shadowBlur    = Math.min(8, coreW * 0.45);
+              ptx.shadowOffsetX = 0.8;
+              ptx.shadowOffsetY = 0.8;
+            } else {
+              ptx.shadowBlur = 0;
+            }
 
             ptx.beginPath();
             ptx.moveTo(b.px,b.py);
