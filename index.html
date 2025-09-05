@@ -157,6 +157,10 @@
           <option value="updown">aufsteigend–absteigend</option>
           <option value="downup">absteigend–aufsteigend</option>
           <option value="random">zufällig</option>
+          <!-- >>> NEU: bekannte Melodien -->
+          <option value="melody_entchen">bekannt: Alle meine Entchen</option>
+          <option value="melody_bond">bekannt: James Bond</option>
+          <!-- <<< NEU -->
         </select>
       </div>
 
@@ -238,7 +242,6 @@
 
   // ===== Helpers: HSL -> RGB (nur rgb/rgba-Strings benutzen) =====
   function hslToRgb(h, s, l){
-    // h: [0,360), s/l: [0,100]
     h = ((h % 360) + 360) % 360;
     s /= 100; l /= 100;
     const c = (1 - Math.abs(2*l - 1)) * s;
@@ -281,11 +284,32 @@
   // ===== Audio =====
   let audioCtx=null, masterGain=null, bounceCount=0;
   const scaleSemitones=[0,3,5,7,10,12,15,17];
+
+  // ----- NEU: Bekannte Melodien (Semitone-Offsets relativ zu A3 = 220 Hz) -----
+  const melodyEntchen = [
+    3,5,7,8,10,10,  12,12,10,10,8,8,7,7,  5,5,3,3
+  ];
+  // Vereinfachtes James-Bond-Kernmotiv (ikonisches Pattern)
+  const melodyBond = [
+    7,8,7,6,7,  3,2,2,   7,8,7,6,7,  10,9,9
+  ];
+  const melodyState = { idx: 0 };
+  function isMelodyMode(){
+    const m = ui.toneOrder.value;
+    return (m === 'melody_entchen' || m === 'melody_bond');
+  }
+  function currentMelodyArray(){
+    return (ui.toneOrder.value === 'melody_entchen') ? melodyEntchen : melodyBond;
+  }
+  // ----- /NEU -----
+
   const seqState = { idx:0, dir:1 };
   function resetToneSeq(){
     const N=scaleSemitones.length;
     if (ui.toneOrder.value==='downup'){ seqState.idx=N-1; seqState.dir=-1; }
     else { seqState.idx=0; seqState.dir=1; }
+    // NEU: Melodie auf Anfang setzen
+    melodyState.idx = 0;
   }
   function nextScaleIndex(){
     const N=scaleSemitones.length;
@@ -306,12 +330,24 @@
     if(!audioCtx) return;
     const t=audioCtx.currentTime;
     const shift = parseInt(ui.pitchShift.value,10) || 0;
-    const idx = nextScaleIndex();
-    const octave = (Math.floor(bounceCount/scaleSemitones.length))%2;
-    const semi   = scaleSemitones[idx] + 12*octave + shift;
-    const freq   = 220*Math.pow(2, semi/12);
     const dur = Math.max(0.22, Math.min(5, parseFloat(ui.toneDur.value)||0.22));
     const type = ui.toneType.value;
+
+    // ===== NEU: Frequenz aus Melodie ODER aus bestehender Skala =====
+    let freq;
+    if (isMelodyMode()){
+      const arr = currentMelodyArray();
+      const midx = melodyState.idx % arr.length;
+      const semiAbs = arr[midx] + shift;         // globaler Pitch-Shift (Halbtöne)
+      freq = 220 * Math.pow(2, semiAbs/12);      // A3=220 Hz
+      melodyState.idx = (melodyState.idx + 1) % arr.length;
+    } else {
+      const idx = nextScaleIndex();
+      const octave = (Math.floor(bounceCount/scaleSemitones.length))%2;
+      const semi   = scaleSemitones[idx] + 12*octave + shift;
+      freq = 220*Math.pow(2, semi/12);
+    }
+    // ===== /NEU =====
 
     if (type==='noise'){
       const len=Math.max(0.05, Math.min(5, dur)), sr=audioCtx.sampleRate;
@@ -490,7 +526,7 @@
     if (e.touches && e.touches.length){
       return { x:(e.touches[0].clientX-rect.left)*dpr, y:(e.touches[0].clientY-rect.top)*dpr };
     }
-    return { x:(e.clientX-rect.left)*dpr, y:(e.clientY-rect-top)*dpr };
+    return { x:(e.clientX-rect.left)*dpr, y:(e.clientY-rect.top)*dpr };
   }
   function pointerDown(e){
     initAudio();
