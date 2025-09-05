@@ -1,0 +1,9 @@
+{
+  "name": "ai-simulation-kolonie",
+  "version": "1.0.0",
+  "description": "Game simulation",
+  "scripts": {
+    "test": "echo 'No tests specified'"
+  },
+  "license": "MIT"
+}
