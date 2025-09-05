@@ -32,10 +32,10 @@ export function draw(){
   ctx.beginPath();
   const markerR = Math.max(2, 2.5*dpr);
   const mode = ui.shape.value;
-  if (mode==='circle'){
-    ctx.arc(CX, CY, markerR, 0, Math.PI*2);
-  }else{
+  if (mode==='lines'){
     ctx.arc(CX, Math.max(18*dpr, 10), markerR, 0, Math.PI*2);
+  } else {
+    ctx.arc(CX, CY, markerR, 0, Math.PI*2);
   }
   ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--accent');
   ctx.fill();
@@ -66,7 +66,7 @@ export function draw(){
       ctx.beginPath(); ctx.arc(CX, CY, midR - thickness*0.33, start, end, false); ctx.stroke();
       ctx.restore();
     }
-  } else {
+  } else if (ui.shape.value==='lines'){
     for (let i=0;i<lines.length;i++){
       const L=lines[i]; if (L.removed) continue;
       const hue = 200 + i*9;

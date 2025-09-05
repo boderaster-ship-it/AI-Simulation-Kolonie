@@ -27,7 +27,8 @@ const state = {
   launched:false, aiming:true, aimX:0, aimY:0, finished:false,
   balls:[],
   bounceCount:0,
-  audioCtx:null, masterGain:null
+  audioCtx:null, masterGain:null,
+  pendulum:{angle:Math.PI/4, vel:0, length:120, damping:0.15, gravity:2.5}
 };
 
 globalThis.state = state;
@@ -83,6 +84,19 @@ function computeLevel(){
     }
     s.ballRadius = Math.max(5*dpr, thickness * 0.23);
     resetRunState(shape);
+  } else if (shape==='pendulum'){
+    s.pendulum.length = Math.min(s.W,s.H)*0.3;
+    s.pendulum.angle = Math.PI/3;
+    s.pendulum.vel = 0;
+    ui.drawMode.checked = true;
+    s.ballRadius = Math.max(5*dpr, 6*dpr);
+    resetRunState(shape);
+    try{ if (s.audioCtx && s.audioCtx.state!=='closed') s.audioCtx.suspend(); }catch(e){}
+    s.ringsLeft = 0;
+    s.elLayers.textContent = '0';
+    s.bounceCount = 0; s.elBounces.textContent = '0';
+    s.elMsg.style.display='none';
+    return;
   } else {
     const topGapPx = 24*dpr;
     const bottomGapPx = 24*dpr;
@@ -126,7 +140,7 @@ function step(ts){
       if (ring.removed) continue;
       ring.openCenter = angleNorm(ring.openCenter + ring.rotSpeed*dtFull);
     }
-  } else {
+  } else if (ui.shape.value==='lines'){
     for (const L of s.lines){
       if (L.removed) continue;
       const margin = Math.max(20*dpr, L.openW*0.6);
@@ -135,7 +149,54 @@ function step(ts){
       L.openX = s.CX + Math.sin(phase)*amp;
     }
   }
-  if (s.launched){
+  if (ui.shape.value==='pendulum'){
+    const b = s.balls[0];
+    if (b){
+      b.px = b.x; b.py = b.y;
+      const p = s.pendulum;
+      p.vel += -p.gravity * Math.sin(p.angle) * dtFull;
+      p.vel *= (1 - p.damping*dtFull);
+      p.angle += p.vel * dtFull;
+      b.x = s.CX + Math.sin(p.angle) * p.length;
+      b.y = s.CY + Math.cos(p.angle) * p.length;
+      b.trail.push({x:b.x,y:b.y});
+      if (ui.drawMode.checked){
+        let hue, sat=88, light=60;
+        const mode = ui.drawColorMode.value;
+        if (mode==='rainbow'){ b.hue=(b.hue+30*dtFull)%360; hue=b.hue; }
+        else if (mode==='red'){ hue=0; }
+        else if (mode==='blue'){ hue=210; }
+        else if (mode==='green'){ hue=130; }
+        else if (mode==='magenta'){ hue=300; }
+        else if (mode==='cyan'){ hue=185; }
+        else if (mode==='yellow'){ hue=55; }
+        else if (mode==='white'){ hue=0; sat=0; light=96; }
+        else if (mode==='neon'){
+          const palette=[50,140,200,290,330];
+          b.neonPhase=(b.neonPhase+dtFull*0.4)%1;
+          hue=palette[Math.floor(b.neonPhase*palette.length)]; sat=96; light=62;
+        } else { hue=200; }
+        const [cr,cg,cb] = hslToRgb(hue, sat, light);
+        const coreColor = rgbString(cr,cg,cb);
+        const edgeColor = rgbString(50,50,50);
+        const base  = Math.max(1.0, b.r);
+        const coreW = Math.max(2.0, base * 1.0);
+        const edgeW = coreW + Math.max(1.0, base * 0.0005);
+        ptx.save();
+        ptx.lineCap='round'; ptx.lineJoin='round';
+        ptx.strokeStyle=edgeColor; ptx.lineWidth=edgeW;
+        ptx.beginPath(); ptx.moveTo(b.px,b.py); ptx.lineTo(b.x,b.y); ptx.stroke(); ptx.restore();
+        ptx.save(); ptx.lineCap='round'; ptx.lineJoin='round';
+        ptx.strokeStyle=coreColor; ptx.lineWidth=coreW;
+        ptx.shadowColor = rgbaString(0,0,0,0.35);
+        ptx.shadowBlur = coreW * 0.6;
+        ptx.shadowOffsetX = 1; ptx.shadowOffsetY = 1;
+        ptx.beginPath(); ptx.moveTo(b.px,b.py); ptx.lineTo(b.x,b.y); ptx.stroke(); ptx.restore();
+      } else if (b.trail.length>s.TRAIL_MAX){
+        b.trail.shift();
+      }
+    }
+  } else if (s.launched){
     let maxSpeed=0;
     for (const b of s.balls) maxSpeed=Math.max(maxSpeed, Math.hypot(b.vx,b.vy));
     const desiredSteps=Math.ceil((maxSpeed*dtFull)/s.SUBSTEP_PIXELS);
