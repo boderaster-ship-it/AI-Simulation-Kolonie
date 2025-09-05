@@ -1,13 +1,15 @@
 let audioCtx=null, masterGain=null, bounceCount=0;
 const scaleSemitones=[0,3,5,7,10,12,15,17];
 const melodyEntchen=[
-  3,5,7,8, 10,10, 12,12, 10,10, 8,8, 7,
-  3,3, 5,5, 7,7, 8, 10,10, 8,8, 7,7, 5, 3
+  3,5,7,8,10,10,
+  12,12,10,10,8,8,7,7,
+  5,5,3,3
 ];
 const melodyBond=[
-  7,8,7,6,7, 2,
-  7,8,7,6,7, 1,2,
-  7,7
+  7,8,7,6,7,
+  3,2,2,
+  7,8,7,6,7,
+  10,9,9
 ];
 const melodyState={idx:0};
 const seqState={idx:0,dir:1};
