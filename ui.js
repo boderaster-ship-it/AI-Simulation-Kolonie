@@ -93,18 +93,13 @@ export function resetRunState(shapeMode){
     spawnX = s.CX;
     spawnY = Math.max(18*s.dpr, 10);
   } else if (mode==='pendulum'){
-    const p = s.pendulum;
-    spawnX = s.CX + Math.sin(p.angle)*p.length;
-    spawnY = s.CY + Math.cos(p.angle)*p.length;
+    spawnX = s.CX;
+    spawnY = s.CY;
   }
   const b = makeBall(spawnX, spawnY, 0, 0);
   b.trail.push({x:b.x,y:b.y});
   s.balls.push(b);
-  if (mode==='pendulum'){
-    s.aiming=false; s.launched=true;
-  } else {
-    s.aiming=true; s.launched=false;
-  }
+  s.aiming=true; s.launched=false;
   s.finished=false; s.elMsg.style.display='none';
 }
 
