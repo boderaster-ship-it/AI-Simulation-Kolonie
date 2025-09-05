@@ -94,7 +94,7 @@ export function resetRunState(shapeMode){
     spawnY = Math.max(18*s.dpr, 10);
   } else if (mode==='pendulum'){
     spawnX = s.CX;
-    spawnY = s.CY;
+    spawnY = s.CY + s.pendulum.length * s.dpr;
   }
   const b = makeBall(spawnX, spawnY, 0, 0);
   b.trail.push({x:b.x,y:b.y});
