@@ -236,6 +236,30 @@
     startBtn: document.getElementById('startBtn')
   };
 
+  // ===== Helpers: HSL -> RGB (nur rgb/rgba-Strings benutzen) =====
+  function hslToRgb(h, s, l){
+    // h: [0,360), s/l: [0,100]
+    h = ((h % 360) + 360) % 360;
+    s /= 100; l /= 100;
+    const c = (1 - Math.abs(2*l - 1)) * s;
+    const x = c * (1 - Math.abs(((h/60) % 2) - 1));
+    const m = l - c/2;
+    let r=0,g=0,b=0;
+    if (0<=h && h<60)   { r=c; g=x; b=0; }
+    else if (60<=h && h<120){ r=x; g=c; b=0; }
+    else if (120<=h && h<180){ r=0; g=c; b=x; }
+    else if (180<=h && h<240){ r=0; g=x; b=c; }
+    else if (240<=h && h<300){ r=x; g=0; b=c; }
+    else { r=c; g=0; b=x; }
+    return [
+      Math.round((r+m)*255),
+      Math.round((g+m)*255),
+      Math.round((b+m)*255)
+    ];
+  }
+  function rgbString(r,g,b){ return `rgb(${r},${g},${b})`; }
+  function rgbaString(r,g,b,a){ return `rgba(${r},${g},${b},${a})`; }
+
   function updateOpenUnitLabel(){
     const isLines = ui.shape.value === 'lines';
     ui.openWidthLbl.firstChild.textContent = isLines ? "Öffnung (mm): " : "Öffnung (°): ";
@@ -466,7 +490,7 @@
     if (e.touches && e.touches.length){
       return { x:(e.touches[0].clientX-rect.left)*dpr, y:(e.touches[0].clientY-rect.top)*dpr };
     }
-    return { x:(e.clientX-rect.left)*dpr, y:(e.clientY-rect.top)*dpr };
+    return { x:(e.clientX-rect.left)*dpr, y:(e.clientY-rect-top)*dpr };
   }
   function pointerDown(e){
     initAudio();
@@ -611,28 +635,6 @@
     }
   }
 
-  // ===== Helper: HSL → RGBA (Canvas-sicher) =====
-  function hslToRgbaCss(h, s, l, a){
-    h = (isFinite(h) ? h : 0) % 360; if (h < 0) h += 360;
-    s = Math.min(100, Math.max(0, s)) / 100;
-    l = Math.min(100, Math.max(0, l)) / 100;
-    const c = (1 - Math.abs(2*l - 1)) * s;
-    const x = c * (1 - Math.abs(((h/60) % 2) - 1));
-    const m = l - c/2;
-    let r=0,g=0,b=0;
-    if (0<=h && h<60){ r=c; g=x; b=0; }
-    else if (60<=h && h<120){ r=x; g=c; b=0; }
-    else if (120<=h && h<180){ r=0; g=c; b=x; }
-    else if (180<=h && h<240){ r=0; g=x; b=c; }
-    else if (240<=h && h<300){ r=x; g=0; b=c; }
-    else { r=c; g=0; b=x; }
-    const R = Math.round((r+m)*255);
-    const G = Math.round((g+m)*255);
-    const B = Math.round((b+m)*255);
-    const A = (a==null ? 1 : Math.max(0, Math.min(1, a)));
-    return `rgba(${R},${G},${B},${A})`;
-  }
-
   // ===== Loop =====
   let lastT=0;
   function step(ts){
@@ -687,7 +689,7 @@
           b.trail.push({x:b.x,y:b.y});
           if (!ui.drawMode.checked && b.trail.length>TRAIL_MAX) b.trail.shift();
 
-          // ======= ZEICHENMODUS – Farbiger Kern + dunkler Rand (Canvas-sichere Farbe) =======
+          // ======= ZEICHENMODUS – Kern (RGB) + dunkler Rand + Schatten =======
           if (ui.drawMode.checked){
             // Farbe wählen
             let hue, sat=88, light=60;
@@ -706,11 +708,10 @@
               hue=palette[Math.floor(b.neonPhase*palette.length)]; sat=96; light=62;
             } else { hue=200; }
 
-            // --- FARBEN ROBUST ALS RGBA ---
-            const coreColor = hslToRgbaCss(hue, sat, light, 1);
-            const edgeColor = 'rgba(50,50,50,0.9)';
+            const [cr,cg,cb] = hslToRgb(hue, sat, light);
+            const coreColor = rgbString(cr,cg,cb);
+            const edgeColor = rgbString(50,50,50);
 
-            // --- BREITEN ---
             const base  = Math.max(1.0, b.r);
             const coreW = Math.max(2.0, base * 1.0);
             const edgeW = coreW + Math.max(1.0, base * 0.5);
@@ -727,19 +728,16 @@
             ptx.stroke();
             ptx.restore();
 
-            // 2) Kern (mit leichtem Schatten)
+            // 2) Kern + Schatten
             ptx.save();
             ptx.lineCap = 'round';
             ptx.lineJoin = 'round';
             ptx.strokeStyle = coreColor;
             ptx.lineWidth   = coreW;
-
-            // schlanker Schatten für Performance
-            ptx.shadowColor   = 'rgba(0,0,0,0.25)';
-            ptx.shadowBlur    = Math.min(8*dpr, coreW*0.5);
-            ptx.shadowOffsetX = 0.75;
-            ptx.shadowOffsetY = 0.75;
-
+            ptx.shadowColor   = rgbaString(0,0,0,0.35);
+            ptx.shadowBlur    = coreW * 0.6;
+            ptx.shadowOffsetX = 1;
+            ptx.shadowOffsetY = 1;
             ptx.beginPath();
             ptx.moveTo(b.px,b.py);
             ptx.lineTo(b.x,b.y);
@@ -779,7 +777,7 @@
       for (let i=0;i<rings.length;i++){
         const ring=rings[i]; if (ring.removed) continue;
         const hue = 200 + i*9;
-        const colorMain = `hsla(${hue}, 65%, 66%, 0.85)`;
+        const colorMain = `hsla(${hue}, 65%, 66%, 0.85)`; // UI/Ring bleibt wie gehabt
         const colorShine= `hsla(${hue}, 85%, 85%, 0.25)`;
         const tInner = ring.innerCirc, tOuter = ring.outerCirc;
         const thickness = (tOuter - tInner);
