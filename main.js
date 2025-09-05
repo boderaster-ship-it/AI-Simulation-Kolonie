@@ -24,7 +24,7 @@ const state = {
   rings:[], lines:[], ringsLeft:0,
   NUM_RINGS:10, OPEN_VAL:40, MAX_SHOT:1100, G:1300, TRAIL_MAX:70,
   ballRadius:6,
-  launched:false, aiming=true, aimX:0, aimY:0, finished:false,
+  launched:false, aiming:true, aimX:0, aimY:0, finished:false,
   balls:[],
   bounceCount:0,
   audioCtx:null, masterGain:null
@@ -200,6 +200,8 @@ function step(ts){
   requestAnimationFrame(step);
 }
 
-setupUI();
-resize();
-requestAnimationFrame(step);
+window.addEventListener('DOMContentLoaded', () => {
+  setupUI();
+  resize();
+  requestAnimationFrame(step);
+});
