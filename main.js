@@ -291,4 +291,8 @@ window.addEventListener('DOMContentLoaded', () => {
   setupUI();
   resize();
   requestAnimationFrame(step);
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
 });
