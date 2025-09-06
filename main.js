@@ -28,6 +28,7 @@ const state = {
   balls:[],
   bounceCount:0,
   audioCtx:null, masterGain:null,
+  spawnY:0,
     pendulum:{angle:Math.PI/4, vel:0, length:120, damping:0, gravity:2.5}
 };
 
@@ -111,18 +112,16 @@ function computeLevel(){
     s.elMsg.style.display='none';
     return;
   } else {
-    const topGapPx = 24*dpr;
+    const spawnY = s.H * 0.3;
+    s.spawnY = spawnY;
+    const topGapPx = spawnY + 40*dpr;
     const bottomGapPx = 24*dpr;
     const avail = s.H - topGapPx - bottomGapPx;
-    const gapRatio = 0.33;
-    const spanFactor = (s.NUM_RINGS + (s.NUM_RINGS-1)*gapRatio);
-    let thickness = Math.max(10*dpr, avail / (spanFactor+0.0001));
-    let gap = thickness * gapRatio;
-    const totalNeeded = s.NUM_RINGS*thickness + (s.NUM_RINGS-1)*gap;
-    if (totalNeeded > avail){
-      const scale = avail / totalNeeded;
-      thickness *= scale; gap *= scale;
-    }
+    const maxThickness = 8*dpr;
+    let thickness = Math.min(maxThickness, avail / (s.NUM_RINGS*2));
+    thickness = Math.max(4*dpr, thickness);
+    const totalLinesHeight = thickness * s.NUM_RINGS;
+    const gap = (avail - totalLinesHeight) / Math.max(1, s.NUM_RINGS-1);
     const openPx = Math.max(6, s.OPEN_VAL * s.pxPerMM);
     for (let i=0;i<s.NUM_RINGS;i++){
       const yCenter = topGapPx + thickness/2 + i*(thickness+gap);

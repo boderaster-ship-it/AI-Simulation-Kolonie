@@ -33,7 +33,7 @@ export function draw(){
   const markerR = Math.max(2, 2.5*dpr);
   const mode = ui.shape.value;
   if (mode==='lines'){
-    ctx.arc(CX, Math.max(18*dpr, 10), markerR, 0, Math.PI*2);
+    ctx.arc(CX, s.spawnY || Math.max(18*dpr, 10), markerR, 0, Math.PI*2);
   } else {
     ctx.arc(CX, CY, markerR, 0, Math.PI*2);
   }
@@ -114,13 +114,13 @@ export function draw(){
   }
 
   if (aiming && !launched){
-    const ax=aimX-(ui.shape.value==='circle'?CX:CX), ay=aimY-(ui.shape.value==='circle'?CY:Math.max(18*dpr,10));
+    const baseY = (ui.shape.value==='circle'?CY:(s.spawnY || Math.max(18*dpr,10)));
+    const ax=aimX-CX, ay=aimY-baseY;
     const len=Math.hypot(ax,ay);
     const maxPull=Math.min(W,H)*0.46*0.55;
     const pull=Math.min(len, maxPull);
     const dirx=ax/(len||1), diry=ay/(len||1);
-    const baseX = (ui.shape.value==='circle'?CX:CX);
-    const baseY = (ui.shape.value==='circle'?CY:Math.max(18*dpr,10));
+    const baseX = CX;
     const tipX=baseX+dirx*pull, tipY=baseY+diry*pull;
 
     ctx.save();
