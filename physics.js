@@ -51,7 +51,7 @@ export function processRingForBall_Circle(b, ring){
         elLayers.textContent = String(s.ringsLeft);
         if (s.ringsLeft===0){
           if (ui.autoRestart.checked){ globalThis.computeLevel(); return; }
-          else { s.launched=false; s.aiming=false; s.finished=true; s.elMsg.style.display='block'; }
+          else { s.launched=false; s.aiming=false; s.finished=true; }
         }
       }
       b.ringIndex++;
@@ -109,7 +109,7 @@ export function processRingForBall_Lines(b){
       elLayers.textContent = String(s.ringsLeft);
       if (s.ringsLeft===0){
         if (ui.autoRestart.checked){ globalThis.computeLevel(); return; }
-        else { s.launched=false; s.aiming=false; s.finished=true; s.elMsg.style.display='block'; }
+        else { s.launched=false; s.aiming=false; s.finished=true; }
       }
       if (ui.multi.checked && balls.length < MAX_BALLS){
         const speed = Math.hypot(b.vx,b.vy), ang=Math.atan2(b.vy,b.vx), d=0.14;

@@ -1,6 +1,6 @@
 import { draw, hslToRgb, rgbString, rgbaString } from "./rendering.js";
 import { angleNorm, makeBall, processRingForBall_Circle, processRingForBall_Lines } from './physics.js';
-import { initAudio, playBounce, resetToneSeq } from './audio.js';
+import { initAudio, playBounce, resetToneSeq, resetBounceCount } from './audio.js';
 import { ui, setupUI, resetRunState } from './ui.js';
 
 const main = document.getElementById('c');
@@ -36,8 +36,21 @@ globalThis.state = state;
 
 function updateHudPosition(){
   const s = state;
+  const shape = ui.shape.value;
+  if (shape === 'lines'){
+    s.hud.style.top = '8px';
+    s.hud.style.right = '8px';
+    s.hud.style.left = '';
+    s.hud.style.transform = '';
+    s.hud.style.flexDirection = 'row';
+    return;
+  }
+  s.hud.style.right = '';
+  s.hud.style.left = '50%';
+  s.hud.style.transform = 'translateX(-50%)';
+  s.hud.style.flexDirection = 'column';
   let topPx;
-  if (ui.shape.value === 'circle'){
+  if (shape === 'circle'){
     const edgeGap = Math.max(22*s.dpr,16);
     const outerR = Math.min(s.W,s.H)/2 - edgeGap;
     topPx = s.CY + outerR + 8*s.dpr;
@@ -109,6 +122,7 @@ function computeLevel(){
     s.ringsLeft = 0;
     s.elLayers.textContent = '0';
     s.bounceCount = 0; s.elBounces.textContent = '0';
+    resetBounceCount();
     s.elMsg.style.display='none';
     return;
   } else {
@@ -136,6 +150,7 @@ function computeLevel(){
   s.ringsLeft = (ui.shape.value==='circle' ? s.rings.length : s.lines.length);
   s.elLayers.textContent = String(s.ringsLeft);
   s.bounceCount = 0; s.elBounces.textContent = '0';
+  resetBounceCount();
   updateHudPosition();
 }
 

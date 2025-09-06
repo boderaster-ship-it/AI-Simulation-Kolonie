@@ -29,6 +29,8 @@ export function resetToneSeq(){
   else { seqState.idx=0; seqState.dir=1; }
   melodyState.idx=0;
 }
+
+export function resetBounceCount(){ bounceCount = 0; }
 function nextScaleIndex(){
   const ui=globalThis.state.ui;
   const N=scaleSemitones.length;
