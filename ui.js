@@ -20,6 +20,8 @@ export const ui = {
   drawMode: document.getElementById('drawMode'),
   pendulumLen: document.getElementById('pendulumLen'),
   pendulumLenVal: document.getElementById('pendulumLenVal'),
+  pendulumSlow: document.getElementById('pendulumSlow'),
+  pendulumSlowVal: document.getElementById('pendulumSlowVal'),
   drawColorMode: document.getElementById('drawColorMode'),
   pitchShift: document.getElementById('pitchShift'),
   pitchShiftVal: document.getElementById('pitchShiftVal'),
@@ -46,12 +48,13 @@ export function syncLabels(){
   if (ui.gravityVal && ui.gravity){ ui.gravityVal.textContent = ui.gravity.value; }
   if (ui.trailLenVal && ui.trailLen){ ui.trailLenVal.textContent = ui.trailLen.value; }
   if (ui.ballSlowVal && ui.ballSlow){ ui.ballSlowVal.textContent = ui.ballSlow.value + '%'; }
-  if (ui.ballSlow && globalThis.state){
-    const pct = parseFloat(ui.ballSlow.value);
-    globalThis.state.pendulum.damping = pct>0 ? -Math.log(1 - pct/100)/5 : 0;
-  }
   if (ui.pendulumLenVal && ui.pendulumLen){ ui.pendulumLenVal.textContent = ui.pendulumLen.value; }
   if (ui.pendulumLen && globalThis.state){ globalThis.state.pendulum.length = +ui.pendulumLen.value; }
+  if (ui.pendulumSlowVal && ui.pendulumSlow){ ui.pendulumSlowVal.textContent = ui.pendulumSlow.value + '%'; }
+  if (ui.pendulumSlow && globalThis.state){
+    const pct = parseFloat(ui.pendulumSlow.value);
+    globalThis.state.pendulum.damping = pct>0 ? -Math.log(1 - pct/100)/5 : 0;
+  }
   if (ui.pitchShiftVal && ui.pitchShift){ ui.pitchShiftVal.textContent = ui.pitchShift.value; }
   if (ui.toneDurVal && ui.toneDur){
     ui.toneDurVal.textContent = parseFloat(ui.toneDur.value).toFixed(2) + " s";
@@ -138,7 +141,7 @@ export async function startGame(){
 }
 
 export function setupUI(){
-  [ui.numRings, ui.openWidth, ui.shotSpeed, ui.gravity, ui.trailLen, ui.ballSlow, ui.pendulumLen, ui.pitchShift, ui.toneDur, ui.shape, ui.drawColorMode]
+  [ui.numRings, ui.openWidth, ui.shotSpeed, ui.gravity, ui.trailLen, ui.ballSlow, ui.pendulumLen, ui.pendulumSlow, ui.pitchShift, ui.toneDur, ui.shape, ui.drawColorMode]
     .filter(Boolean)
     .forEach(el=>{
       el.addEventListener('input', syncLabels);
