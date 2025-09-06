@@ -17,15 +17,14 @@
   #paintCanvas { z-index: 2; pointer-events:none; }
 
   .hud {
-    position:absolute; left:12px; top:12px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+    position:absolute; left:50%; transform:translateX(-50%); display:flex; flex-direction:column; gap:4px; align-items:center;
     background:var(--glass); border:1px solid var(--line); border-radius:10px; padding:8px 10px; backdrop-filter: blur(8px);
     font-size:13px; z-index:3;
   }
-  .hud .stat { padding:4px 8px; border-radius:8px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08); }
-  .hud button {
-    appearance:none; border:1px solid rgba(255,255,255,.2); background:#121823; color:var(--fg); padding:6px 10px; border-radius:8px; cursor:pointer; font-size:13px;
+  .hud .stat { padding:4px 8px; border-radius:8px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08); position:relative; }
+  .hud .stat-btn {
+    position:absolute; inset:0; background:transparent; border:none; cursor:pointer; opacity:0;
   }
-  .hud button:hover { filter:brightness(1.1); }
 
   .msg {
     position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
@@ -71,10 +70,8 @@
   <canvas id="c"></canvas>
 
   <div class="hud hidden" id="hud">
-    <span class="stat">Layers: <b id="layersLeft">10</b></span>
-    <span class="stat">Bounces: <b id="bounces">0</b></span>
-    <button id="backMenu">Zurück ins Menü</button>
-    <button id="reset">Neu starten</button>
+    <span class="stat">Layers: <b id="layersLeft">10</b><button id="reset" class="stat-btn"></button></span>
+    <span class="stat">Bounces: <b id="bounces">0</b><button id="backMenu" class="stat-btn"></button></span>
   </div>
 
   <div id="msg" class="msg">Alle Layers entfernt! Tippe/Klick in die Mitte und schieße erneut.</div>

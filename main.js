@@ -33,6 +33,20 @@ const state = {
 
 globalThis.state = state;
 
+function updateHudPosition(){
+  const s = state;
+  let topPx;
+  if (ui.shape.value === 'circle'){
+    const edgeGap = Math.max(22*s.dpr,16);
+    const outerR = Math.min(s.W,s.H)/2 - edgeGap;
+    topPx = s.CY + outerR + 8*s.dpr;
+  } else {
+    const bottomGapPx = 24*s.dpr;
+    topPx = s.H - bottomGapPx + 8*s.dpr;
+  }
+  s.hud.style.top = (topPx / s.dpr) + 'px';
+}
+
 function calibrateMM(){
   const mmDiv = document.getElementById('mmCal');
   const wCss = mmDiv.getBoundingClientRect().width;
@@ -45,6 +59,7 @@ function resize(){
   if (w===state.W && h===state.H) return;
   state.W=w; state.H=h; main.width=w; main.height=h; paint.width=w; paint.height=h; state.CX=w/2; state.CY=h/2;
   calibrateMM();
+  updateHudPosition();
 }
 window.addEventListener('resize', resize, {passive:true});
 
@@ -122,6 +137,7 @@ function computeLevel(){
   s.ringsLeft = (ui.shape.value==='circle' ? s.rings.length : s.lines.length);
   s.elLayers.textContent = String(s.ringsLeft);
   s.bounceCount = 0; s.elBounces.textContent = '0';
+  updateHudPosition();
 }
 
 globalThis.resize = resize;
