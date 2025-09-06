@@ -1,4 +1,4 @@
-import { initAudio } from './audio.js';
+import { initAudio, resetBounceCount } from './audio.js';
 import { makeBall } from './physics.js';
 
 export const ui = {
@@ -124,6 +124,7 @@ export function resetToMenuState(){
   s.rings.length=0; s.lines.length=0; s.balls.length=0;
   s.ctx.clearRect(0,0,s.W,s.H); s.ptx.clearRect(0,0,s.W,s.H);
   s.elMsg.style.display='none'; s.bounceCount=0; s.elBounces.textContent='0'; s.elLayers.textContent='0';
+  resetBounceCount();
   try { if (s.audioCtx && s.audioCtx.state!=='closed') s.audioCtx.suspend(); } catch(e){}
 }
 
