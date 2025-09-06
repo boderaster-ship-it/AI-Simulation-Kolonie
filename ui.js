@@ -84,7 +84,8 @@ export function pointerMove(e){ const s=globalThis.state; if(!s.aiming) return; 
 export function pointerUp(){
   const s=globalThis.state;
   if (!s.aiming) return;
-  const ax=s.aimX-s.CX, ay=s.aimY-s.CY;
+  const baseY = (ui.shape.value==='circle'? s.CY : s.spawnY);
+  const ax=s.aimX-s.CX, ay=s.aimY-baseY;
   const len=Math.hypot(ax,ay);
   if (len>0.0001){
     const maxPull=Math.min(s.W,s.H)*0.46*0.55;
@@ -105,7 +106,7 @@ export function resetRunState(shapeMode){
   const mode = (shapeMode||ui.shape.value);
   if (mode==='lines'){
     spawnX = s.CX;
-    spawnY = Math.max(18*s.dpr, 10);
+    spawnY = s.spawnY || s.H*0.3;
   } else if (mode==='pendulum'){
     spawnX = s.CX;
     spawnY = s.CY + s.pendulum.length * s.dpr;

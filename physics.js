@@ -87,11 +87,12 @@ export function processRingForBall_Lines(b){
   if (idx >= lines.length) return;
   const L = lines[idx];
   const yTop = L.y - L.halfT;
-  const yBot = L.y + L.halfT;
   const left = L.openX - L.openW/2;
   const right= L.openX + L.openW/2;
-  const prevAboveTop = (b.py <= yTop - b.r), nowBelowTop = (b.y  >= yTop + b.r);
-  const prevAboveMid = (b.py <= L.y), nowBelowMid = (b.y >= L.y);
+  const prevAboveTop = (b.py + b.r <= yTop);
+  const nowBelowTop = (b.y  + b.r >= yTop);
+  const prevAboveMid = (b.py <= L.y);
+  const nowBelowMid = (b.y >= L.y);
   if (prevAboveTop && nowBelowTop){
     if (!(b.x >= left && b.x <= right)){
       b.y = yTop - b.r - 0.01;
