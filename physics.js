@@ -26,7 +26,11 @@ export function processRingForBall_Circle(b, ring){
   const thNow= angleNorm(Math.atan2(b.y-CY, b.x-CX));
   const innerB = ring.innerCirc + b.r;
   const outerB = ring.outerCirc - b.r;
-  const open = inOpening(thNow, ring.openCenter, ring.openWidthAngle);
+  // Allow the ball to exit if any part of it overlaps the opening.
+  // Expand the opening angle by the angular size of the ball so it doesn't
+  // get stuck sliding along the ring edges.
+  const pad = Math.asin(b.r / Math.max(ring.midCirc, 1));
+  const open = inOpening(thNow, ring.openCenter, ring.openWidthAngle + pad * 2);
 
   if (rPrev < innerB && rNow >= innerB){
     if (!open){
@@ -94,7 +98,8 @@ export function processRingForBall_Lines(b){
   const prevAboveMid = (b.py <= L.y);
   const nowBelowMid = (b.y >= L.y);
   if (prevAboveTop && nowBelowTop){
-    if (!(b.x >= left && b.x <= right)){
+    // Require the entire ball to be within the opening; otherwise bounce.
+    if (!(b.x - b.r >= left && b.x + b.r <= right)){
       b.y = yTop - b.r - 0.01;
       b.vy = -Math.abs(b.vy);
       playBounce();
@@ -102,7 +107,8 @@ export function processRingForBall_Lines(b){
     }
   }
   if (prevAboveMid && nowBelowMid){
-    if ((b.x >= left && b.x <= right)){
+    // Only remove the line if the ball fully passed through the gap.
+    if ((b.x - b.r >= left && b.x + b.r <= right)){
       L.removed = true;
       b.ringIndex++;
       s.ringsLeft = lines.filter(r=>!r.removed).length;
